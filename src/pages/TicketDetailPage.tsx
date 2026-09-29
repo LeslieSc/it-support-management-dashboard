@@ -34,18 +34,25 @@ import type {
   TicketStatus,
 } from "../types/ticket";
 
+import type {
+  TicketHistory,
+} from "../types/ticketHistory";
+
 import {
   getTicketById,
+  getTicketHistory,
   updateTicket,
 } from "../services/ticketService";
 
 function TicketDetailPage() {
   const navigate = useNavigate();
-
   const { id } = useParams();
 
   const [ticket, setTicket] =
     useState<Ticket | null>(null);
+
+  const [history, setHistory] =
+    useState<TicketHistory[]>([]);
 
   const [status, setStatus] =
     useState<TicketStatus>("Open");
@@ -65,6 +72,22 @@ function TicketDetailPage() {
   const [success, setSuccess] =
     useState("");
 
+  const loadHistory = async (
+    ticketId: number
+  ) => {
+    try {
+      const historyData =
+        await getTicketHistory(ticketId);
+
+      setHistory(historyData);
+    } catch (error) {
+      console.error(
+        "Error loading ticket history:",
+        error
+      );
+    }
+  };
+
   useEffect(() => {
     async function loadTicket() {
       if (!id) {
@@ -74,15 +97,20 @@ function TicketDetailPage() {
       }
 
       try {
-        const data = await getTicketById(
-          Number(id)
-        );
+        const ticketId = Number(id);
+
+        const data =
+          await getTicketById(ticketId);
 
         setTicket(data);
+
         setStatus(data.status);
+
         setAssignedTo(
           data.assignedTo ?? ""
         );
+
+        await loadHistory(ticketId);
       } catch (error) {
         console.error(
           "Error loading ticket:",
@@ -130,6 +158,10 @@ function TicketDetailPage() {
 
       setAssignedTo(
         updatedTicket.assignedTo ?? ""
+      );
+
+      await loadHistory(
+        updatedTicket.id
       );
 
       setSuccess(
@@ -197,6 +229,35 @@ function TicketDetailPage() {
     }
   };
 
+  const getHistoryTitle = (
+    item: TicketHistory
+  ) => {
+    if (item.fieldName === "status") {
+      return "Status changed";
+    }
+
+    if (
+      item.fieldName === "assignedTo"
+    ) {
+      return "Technician assignment changed";
+    }
+
+    return "Ticket updated";
+  };
+
+  const formatHistoryValue = (
+    value: string | null
+  ) => {
+    if (
+      value === null ||
+      value.trim() === ""
+    ) {
+      return "Unassigned";
+    }
+
+    return value;
+  };
+
   if (loading) {
     return (
       <Box
@@ -216,7 +277,9 @@ function TicketDetailPage() {
       <Box sx={{ padding: 4 }}>
         <Alert
           severity="error"
-          sx={{ marginBottom: 3 }}
+          sx={{
+            marginBottom: 3,
+          }}
         >
           {error || "Ticket not found."}
         </Alert>
@@ -240,21 +303,27 @@ function TicketDetailPage() {
         onClick={() =>
           navigate("/tickets")
         }
-        sx={{ marginBottom: 3 }}
+        sx={{
+          marginBottom: 3,
+        }}
       >
         Back to Tickets
       </Button>
 
       <Typography
         variant="h4"
-        sx={{ fontWeight: "bold" }}
+        sx={{
+          fontWeight: "bold",
+        }}
       >
         Ticket #{ticket.id}
       </Typography>
 
       <Typography
         color="text.secondary"
-        sx={{ marginBottom: 4 }}
+        sx={{
+          marginBottom: 4,
+        }}
       >
         Technical incident details
       </Typography>
@@ -262,7 +331,9 @@ function TicketDetailPage() {
       {error && (
         <Alert
           severity="error"
-          sx={{ marginBottom: 3 }}
+          sx={{
+            marginBottom: 3,
+          }}
         >
           {error}
         </Alert>
@@ -271,7 +342,9 @@ function TicketDetailPage() {
       {success && (
         <Alert
           severity="success"
-          sx={{ marginBottom: 3 }}
+          sx={{
+            marginBottom: 3,
+          }}
         >
           {success}
         </Alert>
@@ -281,6 +354,7 @@ function TicketDetailPage() {
         sx={{
           padding: 4,
           maxWidth: 900,
+          marginBottom: 4,
         }}
       >
         <Typography
@@ -313,10 +387,19 @@ function TicketDetailPage() {
               ticket.status
             )}
           />
+
+          {ticket.isOverdue && (
+            <Chip
+              label="Overdue"
+              color="error"
+            />
+          )}
         </Box>
 
         <Divider
-          sx={{ marginBottom: 3 }}
+          sx={{
+            marginBottom: 3,
+          }}
         />
 
         <Typography
@@ -327,7 +410,9 @@ function TicketDetailPage() {
         </Typography>
 
         <Typography
-          sx={{ marginBottom: 3 }}
+          sx={{
+            marginBottom: 3,
+          }}
         >
           {ticket.description}
         </Typography>
@@ -340,7 +425,9 @@ function TicketDetailPage() {
         </Typography>
 
         <Typography
-          sx={{ marginBottom: 3 }}
+          sx={{
+            marginBottom: 3,
+          }}
         >
           {ticket.branch}
         </Typography>
@@ -353,13 +440,17 @@ function TicketDetailPage() {
         </Typography>
 
         <Typography
-          sx={{ marginBottom: 4 }}
+          sx={{
+            marginBottom: 4,
+          }}
         >
           {ticket.category}
         </Typography>
 
         <Divider
-          sx={{ marginBottom: 3 }}
+          sx={{
+            marginBottom: 3,
+          }}
         />
 
         <Typography
@@ -374,7 +465,9 @@ function TicketDetailPage() {
 
         <FormControl
           fullWidth
-          sx={{ marginBottom: 3 }}
+          sx={{
+            marginBottom: 3,
+          }}
         >
           <InputLabel>
             Status
@@ -418,15 +511,17 @@ function TicketDetailPage() {
           }
           placeholder="Example: Leslie Sosa"
           fullWidth
-          sx={{ marginBottom: 3 }}
+          sx={{
+            marginBottom: 3,
+          }}
         />
 
         <Button
           variant="contained"
           startIcon={
-            saving ? undefined : (
-              <SaveIcon />
-            )
+            saving
+              ? undefined
+              : <SaveIcon />
           }
           onClick={handleSave}
           disabled={saving}
@@ -455,6 +550,98 @@ function TicketDetailPage() {
             ticket.createdAt
           ).toLocaleString()}
         </Typography>
+      </Paper>
+
+      <Paper
+        sx={{
+          padding: 4,
+          maxWidth: 900,
+        }}
+      >
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: "bold",
+            marginBottom: 1,
+          }}
+        >
+          Ticket History
+        </Typography>
+
+        <Typography
+          color="text.secondary"
+          sx={{
+            marginBottom: 3,
+          }}
+        >
+          Changes made to this ticket.
+        </Typography>
+
+        {history.length === 0 ? (
+          <Typography
+            color="text.secondary"
+          >
+            No changes have been recorded yet.
+          </Typography>
+        ) : (
+          history.map(
+            (historyItem, index) => (
+              <Box
+                key={historyItem.id}
+              >
+                <Box
+                  sx={{
+                    paddingTop: 2,
+                    paddingBottom: 2,
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {getHistoryTitle(
+                      historyItem
+                    )}
+                  </Typography>
+
+                  <Typography
+                    sx={{
+                      marginTop: 1,
+                    }}
+                  >
+                    {formatHistoryValue(
+                      historyItem.oldValue
+                    )}
+
+                    {" → "}
+
+                    {formatHistoryValue(
+                      historyItem.newValue
+                    )}
+                  </Typography>
+
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                      marginTop: 1,
+                    }}
+                  >
+                    {new Date(
+                      historyItem.changedAt
+                    ).toLocaleString()}
+                  </Typography>
+                </Box>
+
+                {index <
+                  history.length - 1 && (
+                  <Divider />
+                )}
+              </Box>
+            )
+          )
+        )}
       </Paper>
     </Box>
   );

@@ -5,6 +5,8 @@ import type {
   TicketStatus,
 } from "../types/ticket";
 
+import type { TicketHistory } from "../types/ticketHistory";
+
 const API_URL = "http://localhost:3000/api";
 
 export interface CreateTicketData {
@@ -83,6 +85,20 @@ export async function updateTicket(
 
   if (!response.ok) {
     throw new Error("Failed to update ticket");
+  }
+
+  return response.json();
+}
+
+export async function getTicketHistory(
+  id: number
+): Promise<TicketHistory[]> {
+  const response = await fetch(
+    `${API_URL}/tickets/${id}/history`
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch ticket history");
   }
 
   return response.json();
