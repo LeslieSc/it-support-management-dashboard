@@ -3,6 +3,7 @@ import { Router } from "express";
 import {
   createTicket,
   getTicketById,
+  getTicketHistory,
   getTickets,
   updateTicket,
 } from "../controllers/ticketController.js";
@@ -10,6 +11,8 @@ import {
 const router = Router();
 
 router.get("/", getTickets);
+
+router.get("/:id/history", getTicketHistory);
 
 router.get("/:id", getTicketById);
 
