@@ -8,16 +8,42 @@ import {
   updateTicket,
 } from "../controllers/ticketController.js";
 
+import {
+  authenticateToken,
+  authorizeRoles,
+} from "../middleware/authMiddleware.js";
+
 const router = Router();
 
-router.get("/", getTickets);
+router.use(authenticateToken);
 
-router.get("/:id/history", getTicketHistory);
+router.get(
+  "/",
+  getTickets
+);
 
-router.get("/:id", getTicketById);
+router.get(
+  "/:id/history",
+  getTicketHistory
+);
 
-router.post("/", createTicket);
+router.get(
+  "/:id",
+  getTicketById
+);
 
-router.patch("/:id", updateTicket);
+router.post(
+  "/",
+  createTicket
+);
+
+router.patch(
+  "/:id",
+  authorizeRoles(
+    "ADMIN",
+    "TECHNICIAN"
+  ),
+  updateTicket
+);
 
 export default router;

@@ -5,9 +5,16 @@ import type {
   TicketStatus,
 } from "../types/ticket";
 
-import type { TicketHistory } from "../types/ticketHistory";
+import type {
+  TicketHistory,
+} from "../types/ticketHistory";
 
-const API_URL = "http://localhost:3000/api";
+import {
+  apiFetch,
+} from "./api";
+
+const API_URL =
+  "http://localhost:3000/api";
 
 export interface CreateTicketData {
   title: string;
@@ -23,10 +30,15 @@ export interface UpdateTicketData {
 }
 
 export async function getTickets(): Promise<Ticket[]> {
-  const response = await fetch(`${API_URL}/tickets`);
+  const response =
+    await apiFetch(
+      `${API_URL}/tickets`
+    );
 
   if (!response.ok) {
-    throw new Error("Failed to fetch tickets");
+    throw new Error(
+      "Failed to fetch tickets"
+    );
   }
 
   return response.json();
@@ -35,12 +47,15 @@ export async function getTickets(): Promise<Ticket[]> {
 export async function getTicketById(
   id: number
 ): Promise<Ticket> {
-  const response = await fetch(
-    `${API_URL}/tickets/${id}`
-  );
+  const response =
+    await apiFetch(
+      `${API_URL}/tickets/${id}`
+    );
 
   if (!response.ok) {
-    throw new Error("Failed to fetch ticket");
+    throw new Error(
+      "Failed to fetch ticket"
+    );
   }
 
   return response.json();
@@ -49,18 +64,22 @@ export async function getTicketById(
 export async function createTicket(
   ticket: CreateTicketData
 ): Promise<Ticket> {
-  const response = await fetch(`${API_URL}/tickets`, {
-    method: "POST",
+  const response =
+    await apiFetch(
+      `${API_URL}/tickets`,
+      {
+        method: "POST",
 
-    headers: {
-      "Content-Type": "application/json",
-    },
-
-    body: JSON.stringify(ticket),
-  });
+        body: JSON.stringify(
+          ticket
+        ),
+      }
+    );
 
   if (!response.ok) {
-    throw new Error("Failed to create ticket");
+    throw new Error(
+      "Failed to create ticket"
+    );
   }
 
   return response.json();
@@ -70,21 +89,22 @@ export async function updateTicket(
   id: number,
   data: UpdateTicketData
 ): Promise<Ticket> {
-  const response = await fetch(
-    `${API_URL}/tickets/${id}`,
-    {
-      method: "PATCH",
+  const response =
+    await apiFetch(
+      `${API_URL}/tickets/${id}`,
+      {
+        method: "PATCH",
 
-      headers: {
-        "Content-Type": "application/json",
-      },
-
-      body: JSON.stringify(data),
-    }
-  );
+        body: JSON.stringify(
+          data
+        ),
+      }
+    );
 
   if (!response.ok) {
-    throw new Error("Failed to update ticket");
+    throw new Error(
+      "Failed to update ticket"
+    );
   }
 
   return response.json();
@@ -93,12 +113,15 @@ export async function updateTicket(
 export async function getTicketHistory(
   id: number
 ): Promise<TicketHistory[]> {
-  const response = await fetch(
-    `${API_URL}/tickets/${id}/history`
-  );
+  const response =
+    await apiFetch(
+      `${API_URL}/tickets/${id}/history`
+    );
 
   if (!response.ok) {
-    throw new Error("Failed to fetch ticket history");
+    throw new Error(
+      "Failed to fetch ticket history"
+    );
   }
 
   return response.json();

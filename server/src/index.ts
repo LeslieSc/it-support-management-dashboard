@@ -7,6 +7,7 @@ import { pool } from "./config/database.js";
 import ticketRoutes from "./routes/ticketRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import { startTicketAutomation } from "./services/automationService.js";
+import authRoutes from "./routes/authRoutes.js";
 
 dotenv.config();
 
@@ -47,6 +48,9 @@ app.get("/api/health", async (_req, res) => {
 app.use("/api/tickets", ticketRoutes);
 
 app.use("/api/dashboard", dashboardRoutes);
+
+app.use("/api/auth", authRoutes
+);
 
 startTicketAutomation();
 
