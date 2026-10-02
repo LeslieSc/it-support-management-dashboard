@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+
 import {
   createContext,
   useContext,
@@ -22,16 +24,18 @@ import {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+
   setSession: (
     data: LoginResponse
   ) => void;
+
   logout: () => void;
 }
 
 const AuthContext =
-  createContext<AuthContextType | null>(
-    null
-  );
+  createContext<
+    AuthContextType | undefined
+  >(undefined);
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -40,32 +44,40 @@ interface AuthProviderProps {
 export function AuthProvider({
   children,
 }: AuthProviderProps) {
-  const [user, setUser] =
-    useState<User | null>(
-      getStoredUser()
-    );
+  const [
+    user,
+    setUser,
+  ] = useState<User | null>(
+    () => getStoredUser()
+  );
 
   const setSession = (
     data: LoginResponse
   ) => {
     saveSession(data);
-    setUser(data.user);
+
+    setUser(
+      data.user
+    );
   };
 
   const logout = () => {
     clearSession();
+
     setUser(null);
+  };
+
+  const value: AuthContextType = {
+    user,
+    isAuthenticated:
+      user !== null,
+    setSession,
+    logout,
   };
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated:
-          user !== null,
-        setSession,
-        logout,
-      }}
+      value={value}
     >
       {children}
     </AuthContext.Provider>
@@ -74,11 +86,13 @@ export function AuthProvider({
 
 export function useAuth() {
   const context =
-    useContext(AuthContext);
+    useContext(
+      AuthContext
+    );
 
   if (!context) {
     throw new Error(
-      "useAuth must be used inside AuthProvider"
+      "useAuth must be used within an AuthProvider"
     );
   }
 

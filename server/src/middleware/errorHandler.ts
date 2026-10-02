@@ -19,8 +19,10 @@ export function errorHandler(
   error: unknown,
   req: Request,
   res: Response,
-  _next: NextFunction
+  next: NextFunction
 ) {
+  void next;
+
   console.error(
     `[${req.method}] ${req.originalUrl}`,
     error
