@@ -2,6 +2,7 @@ services:
   postgres:
     image: postgres:16
     container_name: it-support-postgres
+
     restart: unless-stopped
 
     environment:
@@ -14,6 +15,66 @@ services:
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U it_support_user -d it_support_db"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+
+    container_name: it-support-backend
+
+    restart: unless-stopped
+
+    env_file:
+      - ./server/.env
+
+    environment:
+      PORT: 3000
+
+      DB_HOST: postgres
+      DB_PORT: 5432
+
+      DB_NAME: it_support_db
+      DB_USER: it_support_user
+      DB_PASSWORD: it_support_password
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    ports:
+      - "3000:3000"
+
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+      args:
+        VITE_API_URL: /api
+
+    container_name: it-support-frontend
+
+    restart: unless-stopped
+
+    depends_on:
+      - backend
+
+    ports:
+      - "8080:80"
+
 
 volumes:
   postgres_data:
