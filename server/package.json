@@ -1,8 +1,7 @@
 {
   "name": "server",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
@@ -10,8 +9,6 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "keywords": [],
-  "type": "module",
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
