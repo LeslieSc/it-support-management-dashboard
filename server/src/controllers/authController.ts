@@ -1,4 +1,5 @@
 import type {
+  NextFunction,
   Request,
   Response,
 } from "express";
@@ -25,7 +26,7 @@ function createToken(
 
   if (!secret) {
     throw new Error(
-      "JWT_SECRET is not configured"
+      "JWT_SECRET is not configured."
     );
   }
 
@@ -44,7 +45,8 @@ function createToken(
 
 export async function register(
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) {
   try {
     const {
@@ -53,30 +55,11 @@ export async function register(
       password,
     } = req.body;
 
-    const role = "EMPLOYEE";
-
-    if (
-      !fullName ||
-      !email ||
-      !password
-    ) {
-      return res.status(400).json({
-        message:
-          "Full name, email and password are required.",
-      });
-    }
-
-    if (password.length < 8) {
-      return res.status(400).json({
-        message:
-          "Password must contain at least 8 characters.",
-      });
-    }
+    const role: UserRole =
+      "EMPLOYEE";
 
     const normalizedEmail =
-      email
-        .trim()
-        .toLowerCase();
+      email.toLowerCase();
 
     const existingUser =
       await pool.query(
@@ -85,11 +68,14 @@ export async function register(
         FROM users
         WHERE email = $1
         `,
-        [normalizedEmail]
+        [
+          normalizedEmail,
+        ]
       );
 
     if (
-      existingUser.rows.length > 0
+      existingUser.rows.length >
+      0
     ) {
       return res.status(409).json({
         message:
@@ -112,17 +98,20 @@ export async function register(
           password_hash,
           role
         )
-        VALUES ($1, $2, $3, $4)
-
+        VALUES (
+          $1,
+          $2,
+          $3,
+          $4
+        )
         RETURNING
           id,
           full_name AS "fullName",
           email,
-          role,
-          created_at AS "createdAt"
+          role
         `,
         [
-          fullName.trim(),
+          fullName,
           normalizedEmail,
           passwordHash,
           role,
@@ -139,26 +128,19 @@ export async function register(
         user.role
       );
 
-    res.status(201).json({
+    return res.status(201).json({
       user,
       token,
     });
   } catch (error) {
-    console.error(
-      "Registration error:",
-      error
-    );
-
-    res.status(500).json({
-      message:
-        "Error registering user",
-    });
+    next(error);
   }
 }
 
 export async function login(
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) {
   try {
     const {
@@ -166,35 +148,31 @@ export async function login(
       password,
     } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({
-        message:
-          "Email and password are required.",
-      });
-    }
-
     const normalizedEmail =
-      email
-        .trim()
-        .toLowerCase();
+      email.toLowerCase();
 
     const result =
       await pool.query(
         `
         SELECT
           id,
-          full_name AS "fullName",
+          full_name
+            AS "fullName",
           email,
-          password_hash AS "passwordHash",
+          password_hash
+            AS "passwordHash",
           role
         FROM users
         WHERE email = $1
         `,
-        [normalizedEmail]
+        [
+          normalizedEmail,
+        ]
       );
 
     if (
-      result.rows.length === 0
+      result.rows.length ===
+      0
     ) {
       return res.status(401).json({
         message:
@@ -211,7 +189,9 @@ export async function login(
         user.passwordHash
       );
 
-    if (!passwordMatches) {
+    if (
+      !passwordMatches
+    ) {
       return res.status(401).json({
         message:
           "Invalid email or password.",
@@ -225,9 +205,10 @@ export async function login(
         user.role
       );
 
-    res.json({
+    return res.json({
       user: {
-        id: user.id,
+        id:
+          user.id,
         fullName:
           user.fullName,
         email:
@@ -238,14 +219,6 @@ export async function login(
       token,
     });
   } catch (error) {
-    console.error(
-      "Login error:",
-      error
-    );
-
-    res.status(500).json({
-      message:
-        "Error logging in",
-    });
+    next(error);
   }
 }

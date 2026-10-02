@@ -2,6 +2,8 @@ import {
   apiFetch,
 } from "./api";
 
+import API_URL from "../config/api";
+
 export interface DashboardStats {
   openTickets: number;
   inProgressTickets: number;
@@ -11,10 +13,9 @@ export interface DashboardStats {
   totalTickets: number;
 }
 
-const API_URL =
-  "http://localhost:3000/api";
-
-export async function getDashboardStats(): Promise<DashboardStats> {
+export async function getDashboardStats(): Promise<
+  DashboardStats
+> {
   const response =
     await apiFetch(
       `${API_URL}/dashboard/stats`

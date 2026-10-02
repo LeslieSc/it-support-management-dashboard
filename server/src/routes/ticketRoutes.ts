@@ -1,4 +1,6 @@
-import { Router } from "express";
+import {
+  Router,
+} from "express";
 
 import {
   createTicket,
@@ -13,9 +15,21 @@ import {
   authorizeRoles,
 } from "../middleware/authMiddleware.js";
 
-const router = Router();
+import {
+  validateBody,
+} from "../middleware/validateRequest.js";
 
-router.use(authenticateToken);
+import {
+  createTicketSchema,
+  updateTicketSchema,
+} from "../schemas/ticketSchemas.js";
+
+const router =
+  Router();
+
+router.use(
+  authenticateToken
+);
 
 router.get(
   "/",
@@ -34,6 +48,9 @@ router.get(
 
 router.post(
   "/",
+  validateBody(
+    createTicketSchema
+  ),
   createTicket
 );
 
@@ -42,6 +59,9 @@ router.patch(
   authorizeRoles(
     "ADMIN",
     "TECHNICIAN"
+  ),
+  validateBody(
+    updateTicketSchema
   ),
   updateTicket
 );

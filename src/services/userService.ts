@@ -6,10 +6,11 @@ import {
   apiFetch,
 } from "./api";
 
-const API_URL =
-  "http://localhost:3000/api";
+import API_URL from "../config/api";
 
-export async function getTechnicians(): Promise<User[]> {
+export async function getTechnicians(): Promise<
+  User[]
+> {
   const response =
     await apiFetch(
       `${API_URL}/users/technicians`

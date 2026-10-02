@@ -8,16 +8,17 @@ import {
   Box,
   Card,
   CardContent,
+  Chip,
   CircularProgress,
   Grid,
   Typography,
 } from "@mui/material";
 
 import {
+  CheckCircle as CheckCircleIcon,
   ConfirmationNumber as TicketIcon,
-  PendingActions as ProgressIcon,
-  CheckCircle as ResolvedIcon,
-  Warning as CriticalIcon,
+  PendingActions as PendingActionsIcon,
+  Warning as WarningIcon,
 } from "@mui/icons-material";
 
 import {
@@ -28,47 +29,49 @@ import type {
   DashboardStats,
 } from "../services/dashboardService";
 
+import API_URL from "../config/api";
+
 function DashboardPage() {
-  const [stats, setStats] =
-    useState<DashboardStats | null>(
-      null
-    );
+  const [
+    stats,
+    setStats,
+  ] = useState<DashboardStats | null>(
+    null
+  );
 
-  const [apiStatus, setApiStatus] =
-    useState("Checking...");
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [
+    error,
+    setError,
+  ] = useState("");
 
-  const [error, setError] =
-    useState("");
+  const [
+    apiOnline,
+    setApiOnline,
+  ] = useState(false);
 
   useEffect(() => {
     async function loadDashboard() {
       try {
         setLoading(true);
+        setError("");
 
-        const healthResponse =
-          await fetch(
-            "http://localhost:3000/api/health"
-          );
+        try {
+          const healthResponse =
+            await fetch(
+              `${API_URL}/health`
+            );
 
-        if (
-          !healthResponse.ok
-        ) {
-          throw new Error(
-            "API health check failed"
+          setApiOnline(
+            healthResponse.ok
           );
+        } catch {
+          setApiOnline(false);
         }
-
-        const healthData =
-          await healthResponse.json();
-
-        setApiStatus(
-          healthData.status === "ok"
-            ? "Online"
-            : "Offline"
-        );
 
         const dashboardStats =
           await getDashboardStats();
@@ -82,17 +85,11 @@ function DashboardPage() {
           error
         );
 
-        setApiStatus(
-          "Offline"
-        );
-
         setError(
           "Could not load dashboard information."
         );
       } finally {
-        setLoading(
-          false
-        );
+        setLoading(false);
       }
     }
 
@@ -107,6 +104,9 @@ function DashboardPage() {
           display: "flex",
           justifyContent:
             "center",
+          alignItems:
+            "center",
+          minHeight: 300,
         }}
       >
         <CircularProgress />
@@ -114,96 +114,55 @@ function DashboardPage() {
     );
   }
 
-  const cards = [
-    {
-      title:
-        "Open Tickets",
-      value:
-        stats?.openTickets ??
-        0,
-      icon:
-        <TicketIcon />,
-    },
-    {
-      title:
-        "In Progress",
-      value:
-        stats?.inProgressTickets ??
-        0,
-      icon:
-        <ProgressIcon />,
-    },
-    {
-      title:
-        "Resolved",
-      value:
-        stats?.resolvedTickets ??
-        0,
-      icon:
-        <ResolvedIcon />,
-    },
-    {
-      title:
-        "Critical Issues",
-      value:
-        stats?.criticalTickets ??
-        0,
-      icon:
-        <CriticalIcon />,
-    },
-    {
-      title:
-        "Overdue Tickets",
-      value:
-        stats?.overdueTickets ??
-        0,
-      icon:
-        <CriticalIcon />,
-    },
-  ];
-
   return (
     <Box
       sx={{
         padding: 4,
       }}
     >
-      <Typography
-        variant="h4"
+      <Box
         sx={{
-          fontWeight: "bold",
-        }}
-      >
-        IT Support Dashboard
-      </Typography>
-
-      <Typography
-        color="text.secondary"
-        sx={{
-          marginBottom: 2,
-        }}
-      >
-        Monitor and manage
-        technical support
-        incidents.
-      </Typography>
-
-      <Typography
-        variant="body2"
-        color={
-          apiStatus ===
-          "Online"
-            ? "success.main"
-            : "error.main"
-        }
-        sx={{
+          display: "flex",
+          justifyContent:
+            "space-between",
+          alignItems:
+            "center",
           marginBottom: 4,
-          fontWeight: "bold",
+          gap: 2,
+          flexWrap: "wrap",
         }}
       >
-        API Status:{" "}
-        {apiStatus}
-      </Typography>
+        <Box>
+          <Typography
+            variant="h4"
+            sx={{
+              fontWeight: "bold",
+            }}
+          >
+            Dashboard
+          </Typography>
+
+          <Typography
+            color="text.secondary"
+          >
+            IT support overview
+            and ticket statistics.
+          </Typography>
+        </Box>
+
+        <Chip
+          label={
+            apiOnline
+              ? "API Online"
+              : "API Offline"
+          }
+          color={
+            apiOnline
+              ? "success"
+              : "error"
+          }
+        />
+      </Box>
 
       {error && (
         <Alert
@@ -216,31 +175,20 @@ function DashboardPage() {
         </Alert>
       )}
 
-      <Grid
-        container
-        spacing={3}
-        sx={{
-          marginBottom: 4,
-        }}
-      >
-        {cards.map(
-          (card) => (
+      {stats && (
+        <>
+          <Grid
+            container
+            spacing={3}
+          >
             <Grid
-              key={
-                card.title
-              }
               size={{
                 xs: 12,
                 sm: 6,
                 md: 4,
               }}
             >
-              <Card
-                sx={{
-                  height:
-                    "100%",
-                }}
-              >
+              <Card>
                 <CardContent>
                   <Box
                     sx={{
@@ -250,60 +198,279 @@ function DashboardPage() {
                         "space-between",
                       alignItems:
                         "center",
-                      marginBottom: 2,
                     }}
                   >
-                    <Typography
-                      color="text.secondary"
-                    >
-                      {
-                        card.title
-                      }
-                    </Typography>
+                    <Box>
+                      <Typography
+                        color="text.secondary"
+                      >
+                        Open Tickets
+                      </Typography>
 
-                    {
-                      card.icon
-                    }
+                      <Typography
+                        variant="h4"
+                        sx={{
+                          fontWeight:
+                            "bold",
+                          marginTop: 1,
+                        }}
+                      >
+                        {
+                          stats.openTickets
+                        }
+                      </Typography>
+                    </Box>
+
+                    <TicketIcon
+                      fontSize="large"
+                    />
                   </Box>
-
-                  <Typography
-                    variant="h3"
-                    sx={{
-                      fontWeight:
-                        "bold",
-                    }}
-                  >
-                    {
-                      card.value
-                    }
-                  </Typography>
                 </CardContent>
               </Card>
             </Grid>
-          )
-        )}
-      </Grid>
 
-      <Card>
-        <CardContent>
-          <Typography
-            color="text.secondary"
-          >
-            Total Tickets
-          </Typography>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 4,
+              }}
+            >
+              <Card>
+                <CardContent>
+                  <Box
+                    sx={{
+                      display:
+                        "flex",
+                      justifyContent:
+                        "space-between",
+                      alignItems:
+                        "center",
+                    }}
+                  >
+                    <Box>
+                      <Typography
+                        color="text.secondary"
+                      >
+                        In Progress
+                      </Typography>
 
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight:
-                "bold",
-            }}
-          >
-            {stats?.totalTickets ??
-              0}
-          </Typography>
-        </CardContent>
-      </Card>
+                      <Typography
+                        variant="h4"
+                        sx={{
+                          fontWeight:
+                            "bold",
+                          marginTop: 1,
+                        }}
+                      >
+                        {
+                          stats.inProgressTickets
+                        }
+                      </Typography>
+                    </Box>
+
+                    <PendingActionsIcon
+                      fontSize="large"
+                    />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 4,
+              }}
+            >
+              <Card>
+                <CardContent>
+                  <Box
+                    sx={{
+                      display:
+                        "flex",
+                      justifyContent:
+                        "space-between",
+                      alignItems:
+                        "center",
+                    }}
+                  >
+                    <Box>
+                      <Typography
+                        color="text.secondary"
+                      >
+                        Resolved
+                      </Typography>
+
+                      <Typography
+                        variant="h4"
+                        sx={{
+                          fontWeight:
+                            "bold",
+                          marginTop: 1,
+                        }}
+                      >
+                        {
+                          stats.resolvedTickets
+                        }
+                      </Typography>
+                    </Box>
+
+                    <CheckCircleIcon
+                      fontSize="large"
+                    />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 4,
+              }}
+            >
+              <Card>
+                <CardContent>
+                  <Box
+                    sx={{
+                      display:
+                        "flex",
+                      justifyContent:
+                        "space-between",
+                      alignItems:
+                        "center",
+                    }}
+                  >
+                    <Box>
+                      <Typography
+                        color="text.secondary"
+                      >
+                        Critical Issues
+                      </Typography>
+
+                      <Typography
+                        variant="h4"
+                        sx={{
+                          fontWeight:
+                            "bold",
+                          marginTop: 1,
+                        }}
+                      >
+                        {
+                          stats.criticalTickets
+                        }
+                      </Typography>
+                    </Box>
+
+                    <WarningIcon
+                      fontSize="large"
+                    />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 4,
+              }}
+            >
+              <Card>
+                <CardContent>
+                  <Box
+                    sx={{
+                      display:
+                        "flex",
+                      justifyContent:
+                        "space-between",
+                      alignItems:
+                        "center",
+                    }}
+                  >
+                    <Box>
+                      <Typography
+                        color="text.secondary"
+                      >
+                        Overdue Tickets
+                      </Typography>
+
+                      <Typography
+                        variant="h4"
+                        sx={{
+                          fontWeight:
+                            "bold",
+                          marginTop: 1,
+                        }}
+                      >
+                        {
+                          stats.overdueTickets
+                        }
+                      </Typography>
+                    </Box>
+
+                    <WarningIcon
+                      fontSize="large"
+                    />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+                md: 4,
+              }}
+            >
+              <Card>
+                <CardContent>
+                  <Box
+                    sx={{
+                      display:
+                        "flex",
+                      justifyContent:
+                        "space-between",
+                      alignItems:
+                        "center",
+                    }}
+                  >
+                    <Box>
+                      <Typography
+                        color="text.secondary"
+                      >
+                        Total Tickets
+                      </Typography>
+
+                      <Typography
+                        variant="h4"
+                        sx={{
+                          fontWeight:
+                            "bold",
+                          marginTop: 1,
+                        }}
+                      >
+                        {
+                          stats.totalTickets
+                        }
+                      </Typography>
+                    </Box>
+
+                    <TicketIcon
+                      fontSize="large"
+                    />
+                  </Box>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </>
+      )}
     </Box>
   );
 }

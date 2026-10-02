@@ -13,8 +13,7 @@ import {
   apiFetch,
 } from "./api";
 
-const API_URL =
-  "http://localhost:3000/api";
+import API_URL from "../config/api";
 
 export interface CreateTicketData {
   title: string;
@@ -26,10 +25,14 @@ export interface CreateTicketData {
 
 export interface UpdateTicketData {
   status: TicketStatus;
-  assignedToUserId: number | null;
+  assignedToUserId:
+    | number
+    | null;
 }
 
-export async function getTickets(): Promise<Ticket[]> {
+export async function getTickets(): Promise<
+  Ticket[]
+> {
   const response =
     await apiFetch(
       `${API_URL}/tickets`

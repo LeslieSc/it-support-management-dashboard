@@ -7,15 +7,31 @@ import {
   register,
 } from "../controllers/authController.js";
 
-const router = Router();
+import {
+  validateBody,
+} from "../middleware/validateRequest.js";
+
+import {
+  loginSchema,
+  registerSchema,
+} from "../schemas/authSchemas.js";
+
+const router =
+  Router();
 
 router.post(
   "/register",
+  validateBody(
+    registerSchema
+  ),
   register
 );
 
 router.post(
   "/login",
+  validateBody(
+    loginSchema
+  ),
   login
 );
 
