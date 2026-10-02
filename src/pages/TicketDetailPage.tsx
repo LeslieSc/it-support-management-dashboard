@@ -11,6 +11,7 @@ import {
   CircularProgress,
   Divider,
   FormControl,
+  Grid,
   InputLabel,
   MenuItem,
   Paper,
@@ -20,6 +21,9 @@ import {
 
 import {
   ArrowBack as ArrowBackIcon,
+  AssignmentInd as AssignmentIcon,
+  History as HistoryIcon,
+  Person as PersonIcon,
   Save as SaveIcon,
 } from "@mui/icons-material";
 
@@ -67,10 +71,12 @@ function TicketDetailPage() {
 
   const canManageTicket =
     user?.role === "ADMIN" ||
-    user?.role ===
-      "TECHNICIAN";
+    user?.role === "TECHNICIAN";
 
-  const [ticket, setTicket] =
+  const [
+    ticket,
+    setTicket,
+  ] =
     useState<Ticket | null>(
       null
     );
@@ -78,14 +84,16 @@ function TicketDetailPage() {
   const [
     history,
     setHistory,
-  ] = useState<
-    TicketHistory[]
-  >([]);
+  ] =
+    useState<TicketHistory[]>(
+      []
+    );
 
   const [
     technicians,
     setTechnicians,
-  ] = useState<User[]>([]);
+  ] =
+    useState<User[]>([]);
 
   const [
     status,
@@ -98,18 +106,31 @@ function TicketDetailPage() {
   const [
     assignedToUserId,
     setAssignedToUserId,
-  ] = useState<string>("");
-
-  const [loading, setLoading] =
-    useState(true);
-
-  const [saving, setSaving] =
-    useState(false);
-
-  const [error, setError] =
+  ] =
     useState("");
 
-  const [success, setSuccess] =
+  const [
+    loading,
+    setLoading,
+  ] =
+    useState(true);
+
+  const [
+    saving,
+    setSaving,
+  ] =
+    useState(false);
+
+  const [
+    error,
+    setError,
+  ] =
+    useState("");
+
+  const [
+    success,
+    setSuccess,
+  ] =
     useState("");
 
   const loadHistory =
@@ -140,6 +161,7 @@ function TicketDetailPage() {
 
       try {
         setLoading(true);
+        setError("");
 
         const ticketId =
           Number(id);
@@ -211,9 +233,7 @@ function TicketDetailPage() {
 
       try {
         setSaving(true);
-
         setError("");
-
         setSuccess("");
 
         const updatedTicket =
@@ -315,6 +335,9 @@ function TicketDetailPage() {
       case "Resolved":
         return "success";
 
+      case "Closed":
+        return "default";
+
       default:
         return "default";
     }
@@ -353,12 +376,22 @@ function TicketDetailPage() {
     return value;
   };
 
+  const formatDate = (
+    date: string
+  ) => {
+    return new Date(
+      date
+    ).toLocaleString();
+  };
+
   if (loading) {
     return (
       <Box
         sx={{
-          padding: 4,
+          minHeight: 400,
           display: "flex",
+          alignItems:
+            "center",
           justifyContent:
             "center",
         }}
@@ -372,7 +405,10 @@ function TicketDetailPage() {
     return (
       <Box
         sx={{
-          padding: 4,
+          padding: {
+            xs: 2,
+            md: 4,
+          },
         }}
       >
         <Alert
@@ -394,6 +430,10 @@ function TicketDetailPage() {
               "/tickets"
             )
           }
+          sx={{
+            textTransform:
+              "none",
+          }}
         >
           Back to Tickets
         </Button>
@@ -404,7 +444,10 @@ function TicketDetailPage() {
   return (
     <Box
       sx={{
-        padding: 4,
+        padding: {
+          xs: 2,
+          md: 4,
+        },
       }}
     >
       <Button
@@ -417,30 +460,69 @@ function TicketDetailPage() {
           )
         }
         sx={{
+          textTransform:
+            "none",
           marginBottom: 3,
         }}
       >
         Back to Tickets
       </Button>
 
-      <Typography
-        variant="h4"
+      <Box
         sx={{
-          fontWeight: "bold",
-        }}
-      >
-        Ticket #{ticket.id}
-      </Typography>
-
-      <Typography
-        color="text.secondary"
-        sx={{
+          display: "flex",
+          justifyContent:
+            "space-between",
+          alignItems:
+            "center",
+          gap: 2,
+          flexWrap: "wrap",
           marginBottom: 4,
         }}
       >
-        Technical incident
-        details
-      </Typography>
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 700,
+          }}
+        >
+          Ticket #{ticket.id}
+        </Typography>
+
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            flexWrap: "wrap",
+          }}
+        >
+          <Chip
+            label={
+              ticket.priority
+            }
+            color={getPriorityColor(
+              ticket.priority
+            )}
+            variant="outlined"
+          />
+
+          <Chip
+            label={
+              ticket.status
+            }
+            color={getStatusColor(
+              ticket.status
+            )}
+          />
+
+          {ticket.isOverdue && (
+            <Chip
+              label="Overdue"
+              color="error"
+            />
+          )}
+        </Box>
+      </Box>
 
       {error && (
         <Alert
@@ -464,127 +546,39 @@ function TicketDetailPage() {
         </Alert>
       )}
 
-      <Paper
+      <Grid
+        container
+        spacing={3}
         sx={{
-          padding: 4,
-          maxWidth: 900,
           marginBottom: 4,
         }}
       >
-        <Typography
-          variant="h5"
-          sx={{
-            fontWeight: "bold",
-            marginBottom: 2,
+        <Grid
+          size={{
+            xs: 12,
+            lg: 8,
           }}
         >
-          {ticket.title}
-        </Typography>
+          <Paper
+            sx={{
+              padding: {
+                xs: 2,
+                md: 4,
+              },
+              borderRadius: 3,
+              height: "100%",
+            }}
+          >
+            <Typography
+              variant="h5"
+              sx={{
+                fontWeight: 700,
+                marginBottom: 3,
+              }}
+            >
+              {ticket.title}
+            </Typography>
 
-        <Box
-          sx={{
-            display: "flex",
-            gap: 1,
-            marginBottom: 3,
-            flexWrap: "wrap",
-          }}
-        >
-          <Chip
-            label={
-              ticket.priority
-            }
-            color={getPriorityColor(
-              ticket.priority
-            )}
-          />
-
-          <Chip
-            label={
-              ticket.status
-            }
-            color={getStatusColor(
-              ticket.status
-            )}
-          />
-
-          {ticket.isOverdue && (
-            <Chip
-              label="Overdue"
-              color="error"
-            />
-          )}
-        </Box>
-
-        <Divider
-          sx={{
-            marginBottom: 3,
-          }}
-        />
-
-        <Typography
-          variant="subtitle2"
-          color="text.secondary"
-        >
-          Description
-        </Typography>
-
-        <Typography
-          sx={{
-            marginBottom: 3,
-          }}
-        >
-          {ticket.description}
-        </Typography>
-
-        <Typography
-          variant="subtitle2"
-          color="text.secondary"
-        >
-          Branch
-        </Typography>
-
-        <Typography
-          sx={{
-            marginBottom: 3,
-          }}
-        >
-          {ticket.branch}
-        </Typography>
-
-        <Typography
-          variant="subtitle2"
-          color="text.secondary"
-        >
-          Category
-        </Typography>
-
-        <Typography
-          sx={{
-            marginBottom: 3,
-          }}
-        >
-          {ticket.category}
-        </Typography>
-
-        <Typography
-          variant="subtitle2"
-          color="text.secondary"
-        >
-          Created By
-        </Typography>
-
-        <Typography
-          sx={{
-            marginBottom: 4,
-          }}
-        >
-          {ticket.createdBy
-            ?.fullName ??
-            "Unknown"}
-        </Typography>
-
-        {canManageTicket ? (
-          <>
             <Divider
               sx={{
                 marginBottom: 3,
@@ -592,322 +586,675 @@ function TicketDetailPage() {
             />
 
             <Typography
-              variant="h6"
-              sx={{
-                fontWeight:
-                  "bold",
-                marginBottom: 3,
-              }}
-            >
-              Ticket Management
-            </Typography>
-
-            <FormControl
-              fullWidth
-              sx={{
-                marginBottom: 3,
-              }}
-            >
-              <InputLabel>
-                Status
-              </InputLabel>
-
-              <Select
-                value={status}
-                label="Status"
-                onChange={(
-                  event
-                ) =>
-                  setStatus(
-                    event.target
-                      .value as TicketStatus
-                  )
-                }
-              >
-                <MenuItem
-                  value="Open"
-                >
-                  Open
-                </MenuItem>
-
-                <MenuItem
-                  value="In Progress"
-                >
-                  In Progress
-                </MenuItem>
-
-                <MenuItem
-                  value="Resolved"
-                >
-                  Resolved
-                </MenuItem>
-
-                <MenuItem
-                  value="Closed"
-                >
-                  Closed
-                </MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl
-              fullWidth
-              sx={{
-                marginBottom: 3,
-              }}
-            >
-              <InputLabel>
-                Assigned Technician
-              </InputLabel>
-
-              <Select
-                value={
-                  assignedToUserId
-                }
-                label="Assigned Technician"
-                onChange={(
-                  event
-                ) =>
-                  setAssignedToUserId(
-                    event.target
-                      .value
-                  )
-                }
-              >
-                <MenuItem
-                  value=""
-                >
-                  Unassigned
-                </MenuItem>
-
-                {technicians.map(
-                  (
-                    technician
-                  ) => (
-                    <MenuItem
-                      key={
-                        technician.id
-                      }
-                      value={String(
-                        technician.id
-                      )}
-                    >
-                      {
-                        technician.fullName
-                      }
-                      {" — "}
-                      {
-                        technician.role
-                      }
-                    </MenuItem>
-                  )
-                )}
-              </Select>
-            </FormControl>
-
-            <Button
-              variant="contained"
-              startIcon={
-                saving
-                  ? undefined
-                  : (
-                    <SaveIcon />
-                  )
-              }
-              onClick={
-                handleSave
-              }
-              disabled={
-                saving
-              }
-            >
-              {saving
-                ? "Saving..."
-                : "Save Changes"}
-            </Button>
-          </>
-        ) : (
-          <>
-            <Divider
-              sx={{
-                marginBottom: 3,
-              }}
-            />
-
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight:
-                  "bold",
-                marginBottom: 2,
-              }}
-            >
-              Assignment
-            </Typography>
-
-            <Typography
-              variant="subtitle2"
+              variant="overline"
               color="text.secondary"
             >
-              Assigned Technician
+              Description
             </Typography>
 
-            <Typography>
-              {ticket.assignedTo
-                ?.fullName ??
-                "Unassigned"}
+            <Typography
+              sx={{
+                marginTop: 0.5,
+                marginBottom: 4,
+                whiteSpace:
+                  "pre-wrap",
+              }}
+            >
+              {ticket.description}
             </Typography>
-          </>
-        )}
 
-        <Divider
-          sx={{
-            marginTop: 4,
-            marginBottom: 3,
-          }}
-        />
-
-        <Typography
-          variant="subtitle2"
-          color="text.secondary"
-        >
-          Created At
-        </Typography>
-
-        <Typography>
-          {new Date(
-            ticket.createdAt
-          ).toLocaleString()}
-        </Typography>
-      </Paper>
-
-      <Paper
-        sx={{
-          padding: 4,
-          maxWidth: 900,
-        }}
-      >
-        <Typography
-          variant="h5"
-          sx={{
-            fontWeight: "bold",
-            marginBottom: 1,
-          }}
-        >
-          Ticket History
-        </Typography>
-
-        <Typography
-          color="text.secondary"
-          sx={{
-            marginBottom: 3,
-          }}
-        >
-          Changes made to this
-          ticket.
-        </Typography>
-
-        {history.length === 0 ? (
-          <Typography
-            color="text.secondary"
-          >
-            No changes have been
-            recorded yet.
-          </Typography>
-        ) : (
-          history.map(
-            (
-              historyItem,
-              index
-            ) => (
-              <Box
-                key={
-                  historyItem.id
-                }
+            <Grid
+              container
+              spacing={3}
+            >
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                }}
               >
-                <Box
+                <Typography
+                  variant="overline"
+                  color="text.secondary"
+                >
+                  Branch
+                </Typography>
+
+                <Typography
                   sx={{
-                    paddingTop: 2,
-                    paddingBottom: 2,
+                    fontWeight: 600,
+                    marginTop: 0.5,
                   }}
                 >
+                  {ticket.branch}
+                </Typography>
+              </Grid>
+
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                }}
+              >
+                <Typography
+                  variant="overline"
+                  color="text.secondary"
+                >
+                  Category
+                </Typography>
+
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    marginTop: 0.5,
+                  }}
+                >
+                  {ticket.category}
+                </Typography>
+              </Grid>
+
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                }}
+              >
+                <Typography
+                  variant="overline"
+                  color="text.secondary"
+                >
+                  Created By
+                </Typography>
+
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems:
+                      "center",
+                    gap: 1,
+                    marginTop: 0.5,
+                  }}
+                >
+                  <PersonIcon
+                    fontSize="small"
+                    color="action"
+                  />
+
                   <Typography
                     sx={{
                       fontWeight:
-                        "bold",
+                        600,
                     }}
                   >
-                    {getHistoryTitle(
-                      historyItem
-                    )}
-                  </Typography>
-
-                  <Typography
-                    sx={{
-                      marginTop: 1,
-                    }}
-                  >
-                    {formatHistoryValue(
-                      historyItem.oldValue
-                    )}
-
-                    {" → "}
-
-                    {formatHistoryValue(
-                      historyItem.newValue
-                    )}
-                  </Typography>
-
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      marginTop: 1,
-                    }}
-                  >
-                    Changed by{" "}
-                    <strong>
-                      {historyItem
-                        .changedBy
-                        ?.fullName ??
-                        "Unknown user"}
-                    </strong>
-                  </Typography>
-
-                  {historyItem
-                    .changedBy && (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                    >
-                      {
-                        historyItem
-                          .changedBy
-                          .role
-                      }
-                    </Typography>
-                  )}
-
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{
-                      marginTop: 1,
-                    }}
-                  >
-                    {new Date(
-                      historyItem.changedAt
-                    ).toLocaleString()}
+                    {ticket.createdBy
+                      ?.fullName ??
+                      "Unknown"}
                   </Typography>
                 </Box>
+              </Grid>
 
-                {index <
-                  history.length -
-                    1 && (
-                  <Divider />
-                )}
-              </Box>
-            )
-          )
+              <Grid
+                size={{
+                  xs: 12,
+                  sm: 6,
+                }}
+              >
+                <Typography
+                  variant="overline"
+                  color="text.secondary"
+                >
+                  Created At
+                </Typography>
+
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    marginTop: 0.5,
+                  }}
+                >
+                  {formatDate(
+                    ticket.createdAt
+                  )}
+                </Typography>
+              </Grid>
+            </Grid>
+          </Paper>
+        </Grid>
+
+        <Grid
+          size={{
+            xs: 12,
+            lg: 4,
+          }}
+        >
+          <Paper
+            sx={{
+              padding: {
+                xs: 2,
+                md: 3,
+              },
+              borderRadius: 3,
+              height: "100%",
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                alignItems:
+                  "center",
+                gap: 1,
+                marginBottom: 3,
+              }}
+            >
+              <AssignmentIcon />
+
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: 700,
+                }}
+              >
+                Assignment
+              </Typography>
+            </Box>
+
+            {canManageTicket ? (
+              <>
+                <FormControl
+                  fullWidth
+                  sx={{
+                    marginBottom: 3,
+                  }}
+                >
+                  <InputLabel>
+                    Status
+                  </InputLabel>
+
+                  <Select
+                    value={
+                      status
+                    }
+                    label="Status"
+                    onChange={(
+                      event
+                    ) =>
+                      setStatus(
+                        event.target
+                          .value as TicketStatus
+                      )
+                    }
+                  >
+                    <MenuItem
+                      value="Open"
+                    >
+                      Open
+                    </MenuItem>
+
+                    <MenuItem
+                      value="In Progress"
+                    >
+                      In Progress
+                    </MenuItem>
+
+                    <MenuItem
+                      value="Resolved"
+                    >
+                      Resolved
+                    </MenuItem>
+
+                    <MenuItem
+                      value="Closed"
+                    >
+                      Closed
+                    </MenuItem>
+                  </Select>
+                </FormControl>
+
+                <FormControl
+                  fullWidth
+                  sx={{
+                    marginBottom: 3,
+                  }}
+                >
+                  <InputLabel>
+                    Assigned
+                    Technician
+                  </InputLabel>
+
+                  <Select
+                    value={
+                      assignedToUserId
+                    }
+                    label="Assigned Technician"
+                    onChange={(
+                      event
+                    ) =>
+                      setAssignedToUserId(
+                        event.target
+                          .value
+                      )
+                    }
+                  >
+                    <MenuItem
+                      value=""
+                    >
+                      Unassigned
+                    </MenuItem>
+
+                    {technicians.map(
+                      (
+                        technician
+                      ) => (
+                        <MenuItem
+                          key={
+                            technician.id
+                          }
+                          value={String(
+                            technician.id
+                          )}
+                        >
+                          {
+                            technician.fullName
+                          }
+                          {" — "}
+                          {
+                            technician.role
+                          }
+                        </MenuItem>
+                      )
+                    )}
+                  </Select>
+                </FormControl>
+
+                <Button
+                  variant="contained"
+                  fullWidth
+                  startIcon={
+                    saving
+                      ? undefined
+                      : (
+                        <SaveIcon />
+                      )
+                  }
+                  onClick={
+                    handleSave
+                  }
+                  disabled={
+                    saving
+                  }
+                  sx={{
+                    textTransform:
+                      "none",
+                    borderRadius: 2,
+                    paddingY: 1.2,
+                  }}
+                >
+                  {saving
+                    ? "Saving..."
+                    : "Save Changes"}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Typography
+                  variant="overline"
+                  color="text.secondary"
+                >
+                  Assigned
+                  Technician
+                </Typography>
+
+                <Typography
+                  sx={{
+                    fontWeight: 600,
+                    marginTop: 0.5,
+                    marginBottom: 3,
+                  }}
+                >
+                  {ticket.assignedTo
+                    ?.fullName ??
+                    "Unassigned"}
+                </Typography>
+
+                <Typography
+                  variant="overline"
+                  color="text.secondary"
+                >
+                  Status
+                </Typography>
+
+                <Box
+                  sx={{
+                    marginTop: 1,
+                  }}
+                >
+                  <Chip
+                    label={
+                      ticket.status
+                    }
+                    color={getStatusColor(
+                      ticket.status
+                    )}
+                  />
+                </Box>
+              </>
+            )}
+
+            {canManageTicket && (
+              <>
+                <Divider
+                  sx={{
+                    marginY: 3,
+                  }}
+                />
+
+                <Typography
+                  variant="overline"
+                  color="text.secondary"
+                >
+                  Current Technician
+                </Typography>
+
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems:
+                      "center",
+                    gap: 1,
+                    marginTop: 1,
+                  }}
+                >
+                  <PersonIcon
+                    fontSize="small"
+                    color="action"
+                  />
+
+                  <Box>
+                    <Typography
+                      sx={{
+                        fontWeight:
+                          600,
+                      }}
+                    >
+                      {ticket.assignedTo
+                        ?.fullName ??
+                        "Unassigned"}
+                    </Typography>
+
+                    {ticket.assignedTo && (
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                      >
+                        {
+                          ticket.assignedTo
+                            .role
+                        }
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              </>
+            )}
+          </Paper>
+        </Grid>
+      </Grid>
+
+      <Paper
+        sx={{
+          padding: {
+            xs: 2,
+            md: 4,
+          },
+          borderRadius: 3,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems:
+              "center",
+            gap: 1,
+            marginBottom: 4,
+          }}
+        >
+          <HistoryIcon />
+
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 700,
+            }}
+          >
+            Ticket History
+          </Typography>
+        </Box>
+
+        {history.length === 0 ? (
+          <Box
+            sx={{
+              textAlign: "center",
+              paddingY: 6,
+            }}
+          >
+            <HistoryIcon
+              sx={{
+                fontSize: 42,
+                marginBottom: 1,
+              }}
+              color="disabled"
+            />
+
+            <Typography
+              variant="h6"
+            >
+              No history yet
+            </Typography>
+          </Box>
+        ) : (
+          <Box>
+            {history.map(
+              (
+                historyItem,
+                index
+              ) => (
+                <Box
+                  key={
+                    historyItem.id
+                  }
+                  sx={{
+                    display: "flex",
+                    gap: 2,
+                    position:
+                      "relative",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 28,
+                      flexShrink: 0,
+                      display:
+                        "flex",
+                      justifyContent:
+                        "center",
+                      position:
+                        "relative",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 12,
+                        height: 12,
+                        borderRadius:
+                          "50%",
+                        bgcolor:
+                          "primary.main",
+                        marginTop:
+                          1.2,
+                        zIndex: 1,
+                      }}
+                    />
+
+                    {index <
+                      history.length -
+                        1 && (
+                      <Box
+                        sx={{
+                          position:
+                            "absolute",
+                          top: 20,
+                          bottom: 0,
+                          width:
+                            "2px",
+                          bgcolor:
+                            "divider",
+                        }}
+                      />
+                    )}
+                  </Box>
+
+                  <Box
+                    sx={{
+                      flex: 1,
+                      paddingBottom:
+                        index ===
+                        history.length -
+                          1
+                          ? 0
+                          : 4,
+                    }}
+                  >
+                    <Paper
+                      variant="outlined"
+                      sx={{
+                        padding: {
+                          xs: 2,
+                          md: 2.5,
+                        },
+                        borderRadius: 2,
+                        bgcolor:
+                          "background.default",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display:
+                            "flex",
+                          justifyContent:
+                            "space-between",
+                          alignItems:
+                            "flex-start",
+                          gap: 2,
+                          flexWrap:
+                            "wrap",
+                          marginBottom: 2,
+                        }}
+                      >
+                        <Typography
+                          sx={{
+                            fontWeight:
+                              700,
+                          }}
+                        >
+                          {getHistoryTitle(
+                            historyItem
+                          )}
+                        </Typography>
+
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                        >
+                          {formatDate(
+                            historyItem.changedAt
+                          )}
+                        </Typography>
+                      </Box>
+
+                      <Box
+                        sx={{
+                          display:
+                            "flex",
+                          alignItems:
+                            "center",
+                          gap: 1,
+                          flexWrap:
+                            "wrap",
+                          marginBottom: 2,
+                        }}
+                      >
+                        <Chip
+                          label={formatHistoryValue(
+                            historyItem.oldValue
+                          )}
+                          size="small"
+                          variant="outlined"
+                        />
+
+                        <Typography
+                          color="text.secondary"
+                        >
+                          →
+                        </Typography>
+
+                        <Chip
+                          label={formatHistoryValue(
+                            historyItem.newValue
+                          )}
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                        />
+                      </Box>
+
+                      <Box
+                        sx={{
+                          display:
+                            "flex",
+                          alignItems:
+                            "center",
+                          gap: 1,
+                          flexWrap:
+                            "wrap",
+                        }}
+                      >
+                        <PersonIcon
+                          fontSize="small"
+                          color="action"
+                        />
+
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight:
+                              600,
+                          }}
+                        >
+                          {historyItem
+                            .changedBy
+                            ?.fullName ??
+                            "Unknown user"}
+                        </Typography>
+
+                        {historyItem
+                          .changedBy && (
+                          <Chip
+                            label={
+                              historyItem
+                                .changedBy
+                                .role
+                            }
+                            size="small"
+                            variant="outlined"
+                          />
+                        )}
+                      </Box>
+                    </Paper>
+                  </Box>
+                </Box>
+              )
+            )}
+          </Box>
         )}
       </Paper>
     </Box>

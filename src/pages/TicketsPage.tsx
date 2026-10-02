@@ -11,6 +11,7 @@ import {
   Chip,
   CircularProgress,
   FormControl,
+  InputAdornment,
   InputLabel,
   MenuItem,
   Paper,
@@ -27,6 +28,8 @@ import {
 
 import {
   Add as AddIcon,
+  Clear as ClearIcon,
+  Search as SearchIcon,
 } from "@mui/icons-material";
 
 import {
@@ -47,31 +50,46 @@ function TicketsPage() {
   const navigate =
     useNavigate();
 
-  const [tickets, setTickets] =
+  const [
+    tickets,
+    setTickets,
+  ] =
     useState<Ticket[]>([]);
 
-  const [loading, setLoading] =
+  const [
+    loading,
+    setLoading,
+  ] =
     useState(true);
 
-  const [error, setError] =
+  const [
+    error,
+    setError,
+  ] =
     useState("");
 
-  const [search, setSearch] =
+  const [
+    search,
+    setSearch,
+  ] =
     useState("");
 
-  const [statusFilter, setStatusFilter] =
+  const [
+    statusFilter,
+    setStatusFilter,
+  ] =
     useState("");
 
   const [
     priorityFilter,
     setPriorityFilter,
-  ] = useState("");
+  ] =
+    useState("");
 
   useEffect(() => {
     async function loadTickets() {
       try {
         setLoading(true);
-
         setError("");
 
         const data =
@@ -122,7 +140,7 @@ function TicketsPage() {
                 normalizedSearch
               ) ||
             (
-              ticket.assignedTo
+              ticket.createdBy
                 ?.fullName ?? ""
             )
               .toLowerCase()
@@ -130,7 +148,7 @@ function TicketsPage() {
                 normalizedSearch
               ) ||
             (
-              ticket.createdBy
+              ticket.assignedTo
                 ?.fullName ?? ""
             )
               .toLowerCase()
@@ -161,6 +179,17 @@ function TicketsPage() {
       statusFilter,
       priorityFilter,
     ]);
+
+  const hasFilters =
+    search !== "" ||
+    statusFilter !== "" ||
+    priorityFilter !== "";
+
+  const clearFilters = () => {
+    setSearch("");
+    setStatusFilter("");
+    setPriorityFilter("");
+  };
 
   const getPriorityColor = (
     priority: TicketPriority
@@ -217,8 +246,10 @@ function TicketsPage() {
     return (
       <Box
         sx={{
-          padding: 4,
+          minHeight: 400,
           display: "flex",
+          alignItems:
+            "center",
           justifyContent:
             "center",
         }}
@@ -231,7 +262,10 @@ function TicketsPage() {
   return (
     <Box
       sx={{
-        padding: 4,
+        padding: {
+          xs: 2,
+          md: 4,
+        },
       }}
     >
       <Box
@@ -239,29 +273,21 @@ function TicketsPage() {
           display: "flex",
           justifyContent:
             "space-between",
-          alignItems: "center",
-          marginBottom: 3,
+          alignItems:
+            "center",
           gap: 2,
           flexWrap: "wrap",
+          marginBottom: 4,
         }}
       >
-        <Box>
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: "bold",
-            }}
-          >
-            Tickets
-          </Typography>
-
-          <Typography
-            color="text.secondary"
-          >
-            Manage IT support
-            requests.
-          </Typography>
-        </Box>
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 700,
+          }}
+        >
+          Tickets
+        </Typography>
 
         <Button
           variant="contained"
@@ -273,6 +299,12 @@ function TicketsPage() {
               "/tickets/create"
             )
           }
+          sx={{
+            borderRadius: 2,
+            textTransform:
+              "none",
+            paddingX: 2.5,
+          }}
         >
           New Ticket
         </Button>
@@ -291,20 +323,26 @@ function TicketsPage() {
 
       <Paper
         sx={{
-          padding: 3,
+          padding: {
+            xs: 2,
+            md: 3,
+          },
           marginBottom: 3,
+          borderRadius: 3,
         }}
       >
         <Box
           sx={{
             display: "flex",
+            alignItems:
+              "center",
             gap: 2,
             flexWrap: "wrap",
           }}
         >
           <TextField
-            label="Search"
-            placeholder="Title, branch, category, creator or technician"
+            label="Search tickets"
+            placeholder="Title, branch, category..."
             value={search}
             onChange={(event) =>
               setSearch(
@@ -312,14 +350,31 @@ function TicketsPage() {
               )
             }
             sx={{
-              minWidth: 280,
               flex: 1,
+              minWidth: {
+                xs: "100%",
+                sm: 280,
+              },
+            }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment
+                    position="start"
+                  >
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              },
             }}
           />
 
           <FormControl
             sx={{
-              minWidth: 180,
+              minWidth: {
+                xs: "100%",
+                sm: 180,
+              },
             }}
           >
             <InputLabel>
@@ -343,7 +398,7 @@ function TicketsPage() {
               <MenuItem
                 value=""
               >
-                All
+                All statuses
               </MenuItem>
 
               <MenuItem
@@ -374,7 +429,10 @@ function TicketsPage() {
 
           <FormControl
             sx={{
-              minWidth: 180,
+              minWidth: {
+                xs: "100%",
+                sm: 180,
+              },
             }}
           >
             <InputLabel>
@@ -398,7 +456,7 @@ function TicketsPage() {
               <MenuItem
                 value=""
               >
-                All
+                All priorities
               </MenuItem>
 
               <MenuItem
@@ -426,152 +484,268 @@ function TicketsPage() {
               </MenuItem>
             </Select>
           </FormControl>
+
+          {hasFilters && (
+            <Button
+              startIcon={
+                <ClearIcon />
+              }
+              onClick={
+                clearFilters
+              }
+              sx={{
+                textTransform:
+                  "none",
+              }}
+            >
+              Clear
+            </Button>
+          )}
         </Box>
+
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{
+            marginTop: 2,
+          }}
+        >
+          {filteredTickets.length}{" "}
+          of {tickets.length}{" "}
+          tickets
+        </Typography>
       </Paper>
 
-      <TableContainer
-        component={Paper}
+      <Paper
+        sx={{
+          borderRadius: 3,
+          overflow: "hidden",
+        }}
       >
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>
-                ID
-              </TableCell>
-
-              <TableCell>
-                Title
-              </TableCell>
-
-              <TableCell>
-                Branch
-              </TableCell>
-
-              <TableCell>
-                Category
-              </TableCell>
-
-              <TableCell>
-                Priority
-              </TableCell>
-
-              <TableCell>
-                Status
-              </TableCell>
-
-              <TableCell>
-                Overdue
-              </TableCell>
-
-              <TableCell>
-                Created By
-              </TableCell>
-
-              <TableCell>
-                Assigned To
-              </TableCell>
-            </TableRow>
-          </TableHead>
-
-          <TableBody>
-            {filteredTickets.length ===
-            0 ? (
-              <TableRow>
+        <TableContainer
+          sx={{
+            overflowX: "auto",
+          }}
+        >
+          <Table
+            sx={{
+              minWidth: 1000,
+            }}
+          >
+            <TableHead>
+              <TableRow
+                sx={{
+                  bgcolor:
+                    "action.hover",
+                }}
+              >
                 <TableCell
-                  colSpan={9}
-                  align="center"
+                  sx={{
+                    fontWeight:
+                      700,
+                  }}
                 >
-                  No tickets found.
+                  ID
+                </TableCell>
+
+                <TableCell
+                  sx={{
+                    fontWeight:
+                      700,
+                  }}
+                >
+                  Ticket
+                </TableCell>
+
+                <TableCell
+                  sx={{
+                    fontWeight:
+                      700,
+                  }}
+                >
+                  Branch
+                </TableCell>
+
+                <TableCell
+                  sx={{
+                    fontWeight:
+                      700,
+                  }}
+                >
+                  Category
+                </TableCell>
+
+                <TableCell
+                  sx={{
+                    fontWeight:
+                      700,
+                  }}
+                >
+                  Priority
+                </TableCell>
+
+                <TableCell
+                  sx={{
+                    fontWeight:
+                      700,
+                  }}
+                >
+                  Status
+                </TableCell>
+
+                <TableCell
+                  sx={{
+                    fontWeight:
+                      700,
+                  }}
+                >
+                  Created By
+                </TableCell>
+
+                <TableCell
+                  sx={{
+                    fontWeight:
+                      700,
+                  }}
+                >
+                  Assigned To
                 </TableCell>
               </TableRow>
-            ) : (
-              filteredTickets.map(
-                (ticket) => (
-                  <TableRow
-                    key={
-                      ticket.id
-                    }
-                    hover
-                    onClick={() =>
-                      navigate(
-                        `/tickets/${ticket.id}`
-                      )
-                    }
+            </TableHead>
+
+            <TableBody>
+              {filteredTickets.length ===
+              0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={8}
+                    align="center"
                     sx={{
-                      cursor:
-                        "pointer",
+                      paddingY: 8,
                     }}
                   >
-                    <TableCell>
-                      #{ticket.id}
-                    </TableCell>
+                    <Typography
+                      variant="h6"
+                    >
+                      No tickets found
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredTickets.map(
+                  (
+                    ticket
+                  ) => (
+                    <TableRow
+                      key={
+                        ticket.id
+                      }
+                      hover
+                      onClick={() =>
+                        navigate(
+                          `/tickets/${ticket.id}`
+                        )
+                      }
+                      sx={{
+                        cursor:
+                          "pointer",
+                      }}
+                    >
+                      <TableCell>
+                        <Typography
+                          color="text.secondary"
+                        >
+                          #
+                          {
+                            ticket.id
+                          }
+                        </Typography>
+                      </TableCell>
 
-                    <TableCell>
-                      {ticket.title}
-                    </TableCell>
+                      <TableCell>
+                        <Typography
+                          sx={{
+                            fontWeight:
+                              600,
+                          }}
+                        >
+                          {
+                            ticket.title
+                          }
+                        </Typography>
 
-                    <TableCell>
-                      {ticket.branch}
-                    </TableCell>
-
-                    <TableCell>
-                      {ticket.category}
-                    </TableCell>
-
-                    <TableCell>
-                      <Chip
-                        label={
-                          ticket.priority
-                        }
-                        color={getPriorityColor(
-                          ticket.priority
+                        {ticket.isOverdue && (
+                          <Typography
+                            variant="caption"
+                            color="error"
+                            sx={{
+                              fontWeight:
+                                600,
+                            }}
+                          >
+                            Overdue
+                          </Typography>
                         )}
-                        size="small"
-                      />
-                    </TableCell>
+                      </TableCell>
 
-                    <TableCell>
-                      <Chip
-                        label={
-                          ticket.status
+                      <TableCell>
+                        {
+                          ticket.branch
                         }
-                        color={getStatusColor(
-                          ticket.status
-                        )}
-                        size="small"
-                      />
-                    </TableCell>
+                      </TableCell>
 
-                    <TableCell>
-                      {ticket.isOverdue ? (
+                      <TableCell>
+                        {
+                          ticket.category
+                        }
+                      </TableCell>
+
+                      <TableCell>
                         <Chip
-                          label="Overdue"
-                          color="error"
+                          label={
+                            ticket.priority
+                          }
+                          color={getPriorityColor(
+                            ticket.priority
+                          )}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </TableCell>
+
+                      <TableCell>
+                        <Chip
+                          label={
+                            ticket.status
+                          }
+                          color={getStatusColor(
+                            ticket.status
+                          )}
                           size="small"
                         />
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
+                      </TableCell>
 
-                    <TableCell>
-                      {ticket.createdBy
-                        ?.fullName ??
-                        "Unknown"}
-                    </TableCell>
+                      <TableCell>
+                        {ticket
+                          .createdBy
+                          ?.fullName ??
+                          "Unknown"}
+                      </TableCell>
 
-                    <TableCell>
-                      {ticket.assignedTo
-                        ?.fullName ??
-                        "Unassigned"}
-                    </TableCell>
-                  </TableRow>
+                      <TableCell>
+                        {ticket
+                          .assignedTo
+                          ?.fullName ??
+                          "Unassigned"}
+                      </TableCell>
+                    </TableRow>
+                  )
                 )
-              )
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </Paper>
     </Box>
   );
 }

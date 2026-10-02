@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useState,
 } from "react";
 
@@ -13,7 +14,11 @@ import {
 } from "@mui/material";
 
 import {
-  Navigate,
+  ConfirmationNumberOutlined as TicketIcon,
+  Login as LoginIcon,
+} from "@mui/icons-material";
+
+import {
   useNavigate,
 } from "react-router-dom";
 
@@ -34,26 +39,41 @@ function LoginPage() {
     setSession,
   } = useAuth();
 
-  const [email, setEmail] =
-    useState("");
+  const [
+    email,
+    setEmail,
+  ] = useState("");
 
-  const [password, setPassword] =
-    useState("");
+  const [
+    password,
+    setPassword,
+  ] = useState("");
 
-  const [loading, setLoading] =
-    useState(false);
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
 
-  const [error, setError] =
-    useState("");
+  const [
+    error,
+    setError,
+  ] = useState("");
 
-  if (isAuthenticated) {
-    return (
-      <Navigate
-        to="/"
-        replace
-      />
-    );
-  }
+  useEffect(() => {
+    if (
+      isAuthenticated
+    ) {
+      navigate(
+        "/",
+        {
+          replace: true,
+        }
+      );
+    }
+  }, [
+    isAuthenticated,
+    navigate,
+  ]);
 
   const handleSubmit = async (
     event: React.FormEvent
@@ -64,25 +84,26 @@ function LoginPage() {
       setLoading(true);
       setError("");
 
-      const session =
+      const data =
         await login(
           email,
           password
         );
 
-      setSession(session);
+      setSession(data);
 
-      navigate("/");
+      navigate(
+        "/",
+        {
+          replace: true,
+        }
+      );
     } catch (error) {
-      if (
+      setError(
         error instanceof Error
-      ) {
-        setError(error.message);
-      } else {
-        setError(
-          "Unable to log in."
-        );
-      }
+          ? error.message
+          : "Login failed."
+      );
     } finally {
       setLoading(false);
     }
@@ -93,40 +114,67 @@ function LoginPage() {
       sx={{
         minHeight: "100vh",
         display: "flex",
-        alignItems: "center",
+        alignItems:
+          "center",
         justifyContent:
           "center",
-        backgroundColor:
-          "#f5f6f8",
-        padding: 3,
+        padding: 2,
+        bgcolor:
+          "background.default",
       }}
     >
       <Paper
+        component="form"
+        onSubmit={
+          handleSubmit
+        }
         sx={{
           width: "100%",
           maxWidth: 420,
-          padding: 4,
+          padding: {
+            xs: 3,
+            sm: 4,
+          },
+          borderRadius: 3,
         }}
       >
-        <Typography
-          variant="h4"
+        <Box
           sx={{
-            fontWeight: "bold",
-            marginBottom: 1,
-          }}
-        >
-          IT Support
-        </Typography>
-
-        <Typography
-          color="text.secondary"
-          sx={{
+            display: "flex",
+            alignItems:
+              "center",
+            gap: 1.5,
             marginBottom: 4,
           }}
         >
-          Sign in to access the
-          support management system.
-        </Typography>
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              display: "flex",
+              alignItems:
+                "center",
+              justifyContent:
+                "center",
+              borderRadius: 2,
+              bgcolor:
+                "primary.main",
+              color:
+                "primary.contrastText",
+            }}
+          >
+            <TicketIcon />
+          </Box>
+
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: 700,
+            }}
+          >
+            IT Support
+          </Typography>
+        </Box>
 
         {error && (
           <Alert
@@ -139,60 +187,74 @@ function LoginPage() {
           </Alert>
         )}
 
-        <Box
-          component="form"
-          onSubmit={
-            handleSubmit
+        <TextField
+          label="Email"
+          type="email"
+          value={email}
+          onChange={(
+            event
+          ) =>
+            setEmail(
+              event.target.value
+            )
+          }
+          autoComplete="email"
+          fullWidth
+          required
+          sx={{
+            marginBottom: 3,
+          }}
+        />
+
+        <TextField
+          label="Password"
+          type="password"
+          value={password}
+          onChange={(
+            event
+          ) =>
+            setPassword(
+              event.target.value
+            )
+          }
+          autoComplete="current-password"
+          fullWidth
+          required
+          sx={{
+            marginBottom: 3,
+          }}
+        />
+
+        <Button
+          type="submit"
+          variant="contained"
+          fullWidth
+          disabled={
+            loading
+          }
+          startIcon={
+            loading
+              ? undefined
+              : (
+                <LoginIcon />
+              )
           }
           sx={{
-            display: "flex",
-            flexDirection:
-              "column",
-            gap: 3,
+            paddingY: 1.25,
+            borderRadius: 2,
+            textTransform:
+              "none",
           }}
         >
-          <TextField
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(event) =>
-              setEmail(
-                event.target.value
-              )
-            }
-            required
-            fullWidth
-          />
-
-          <TextField
-            label="Password"
-            type="password"
-            value={password}
-            onChange={(event) =>
-              setPassword(
-                event.target.value
-              )
-            }
-            required
-            fullWidth
-          />
-
-          <Button
-            type="submit"
-            variant="contained"
-            size="large"
-            disabled={loading}
-          >
-            {loading ? (
-              <CircularProgress
-                size={24}
-                color="inherit"
-              />
-            ) : (
-              "Sign In"
-            )}
-          </Button>
-        </Box>
+          {loading ? (
+            <CircularProgress
+              size={22}
+              color="inherit"
+            />
+          ) : (
+            "Sign In"
+          )}
+        </Button>
       </Paper>
     </Box>
   );
