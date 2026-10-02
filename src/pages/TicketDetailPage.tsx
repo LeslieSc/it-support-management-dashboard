@@ -15,7 +15,6 @@ import {
   MenuItem,
   Paper,
   Select,
-  TextField,
   Typography,
 } from "@mui/material";
 
@@ -38,6 +37,10 @@ import type {
   TicketHistory,
 } from "../types/ticketHistory";
 
+import type {
+  User,
+} from "../types/auth";
+
 import {
   getTicketById,
   getTicketHistory,
@@ -45,31 +48,57 @@ import {
 } from "../services/ticketService";
 
 import {
+  getTechnicians,
+} from "../services/userService";
+
+import {
   useAuth,
 } from "../context/AuthContext";
 
 function TicketDetailPage() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const { id } = useParams();
+  const { id } =
+    useParams();
 
-  const { user } = useAuth();
+  const { user } =
+    useAuth();
 
   const canManageTicket =
     user?.role === "ADMIN" ||
-    user?.role === "TECHNICIAN";
+    user?.role ===
+      "TECHNICIAN";
 
   const [ticket, setTicket] =
-    useState<Ticket | null>(null);
+    useState<Ticket | null>(
+      null
+    );
 
-  const [history, setHistory] =
-    useState<TicketHistory[]>([]);
+  const [
+    history,
+    setHistory,
+  ] = useState<
+    TicketHistory[]
+  >([]);
 
-  const [status, setStatus] =
-    useState<TicketStatus>("Open");
+  const [
+    technicians,
+    setTechnicians,
+  ] = useState<User[]>([]);
 
-  const [assignedTo, setAssignedTo] =
-    useState("");
+  const [
+    status,
+    setStatus,
+  ] =
+    useState<TicketStatus>(
+      "Open"
+    );
+
+  const [
+    assignedToUserId,
+    setAssignedToUserId,
+  ] = useState<string>("");
 
   const [loading, setLoading] =
     useState(true);
@@ -83,24 +112,22 @@ function TicketDetailPage() {
   const [success, setSuccess] =
     useState("");
 
-  const loadHistory = async (
-    ticketId: number
-  ) => {
-    try {
+  const loadHistory =
+    async (
+      ticketId: number
+    ) => {
       const historyData =
-        await getTicketHistory(ticketId);
+        await getTicketHistory(
+          ticketId
+        );
 
-      setHistory(historyData);
-    } catch (error) {
-      console.error(
-        "Error loading ticket history:",
-        error
+      setHistory(
+        historyData
       );
-    }
-  };
+    };
 
   useEffect(() => {
-    async function loadTicket() {
+    async function loadData() {
       if (!id) {
         setError(
           "Invalid ticket ID."
@@ -112,27 +139,47 @@ function TicketDetailPage() {
       }
 
       try {
+        setLoading(true);
+
         const ticketId =
           Number(id);
 
-        const data =
+        const ticketData =
           await getTicketById(
             ticketId
           );
 
-        setTicket(data);
-
-        setStatus(
-          data.status
+        setTicket(
+          ticketData
         );
 
-        setAssignedTo(
-          data.assignedTo ?? ""
+        setStatus(
+          ticketData.status
+        );
+
+        setAssignedToUserId(
+          ticketData.assignedTo
+            ? String(
+                ticketData
+                  .assignedTo.id
+              )
+            : ""
         );
 
         await loadHistory(
           ticketId
         );
+
+        if (
+          canManageTicket
+        ) {
+          const technicianData =
+            await getTechnicians();
+
+          setTechnicians(
+            technicianData
+          );
+        }
       } catch (error) {
         console.error(
           "Error loading ticket:",
@@ -147,75 +194,81 @@ function TicketDetailPage() {
       }
     }
 
-    loadTicket();
-  }, [id]);
+    loadData();
+  }, [
+    id,
+    canManageTicket,
+  ]);
 
-  const handleSave = async () => {
-    if (!ticket) {
-      return;
-    }
+  const handleSave =
+    async () => {
+      if (
+        !ticket ||
+        !canManageTicket
+      ) {
+        return;
+      }
 
-    if (!canManageTicket) {
-      setError(
-        "You do not have permission to update this ticket."
-      );
+      try {
+        setSaving(true);
 
-      return;
-    }
+        setError("");
 
-    try {
-      setSaving(true);
+        setSuccess("");
 
-      setError("");
+        const updatedTicket =
+          await updateTicket(
+            ticket.id,
+            {
+              status,
 
-      setSuccess("");
+              assignedToUserId:
+                assignedToUserId ===
+                ""
+                  ? null
+                  : Number(
+                      assignedToUserId
+                    ),
+            }
+          );
 
-      const updatedTicket =
-        await updateTicket(
-          ticket.id,
-          {
-            status,
-
-            assignedTo:
-              assignedTo.trim() === ""
-                ? null
-                : assignedTo,
-          }
+        setTicket(
+          updatedTicket
         );
 
-      setTicket(
-        updatedTicket
-      );
+        setStatus(
+          updatedTicket.status
+        );
 
-      setStatus(
-        updatedTicket.status
-      );
+        setAssignedToUserId(
+          updatedTicket.assignedTo
+            ? String(
+                updatedTicket
+                  .assignedTo.id
+              )
+            : ""
+        );
 
-      setAssignedTo(
-        updatedTicket.assignedTo ??
-          ""
-      );
+        await loadHistory(
+          updatedTicket.id
+        );
 
-      await loadHistory(
-        updatedTicket.id
-      );
+        setSuccess(
+          "Ticket updated successfully."
+        );
+      } catch (error) {
+        console.error(
+          "Error updating ticket:",
+          error
+        );
 
-      setSuccess(
-        "Ticket updated successfully."
-      );
-    } catch (error) {
-      console.error(
-        "Error updating ticket:",
-        error
-      );
-
-      setError(
-        "Could not update the ticket."
-      );
-    } finally {
-      setSaving(false);
-    }
-  };
+        setError(
+          "Could not update the ticket."
+        );
+      } finally {
+        setSaving(false);
+      }
+    };
 
   const getPriorityColor = (
     priority: string
@@ -250,7 +303,9 @@ function TicketDetailPage() {
     | "success"
     | "warning"
     | "info" => {
-    switch (currentStatus) {
+    switch (
+      currentStatus
+    ) {
       case "Open":
         return "warning";
 
@@ -357,7 +412,9 @@ function TicketDetailPage() {
           <ArrowBackIcon />
         }
         onClick={() =>
-          navigate("/tickets")
+          navigate(
+            "/tickets"
+          )
         }
         sx={{
           marginBottom: 3,
@@ -381,7 +438,8 @@ function TicketDetailPage() {
           marginBottom: 4,
         }}
       >
-        Technical incident details
+        Technical incident
+        details
       </Typography>
 
       {error && (
@@ -502,10 +560,27 @@ function TicketDetailPage() {
 
         <Typography
           sx={{
-            marginBottom: 4,
+            marginBottom: 3,
           }}
         >
           {ticket.category}
+        </Typography>
+
+        <Typography
+          variant="subtitle2"
+          color="text.secondary"
+        >
+          Created By
+        </Typography>
+
+        <Typography
+          sx={{
+            marginBottom: 4,
+          }}
+        >
+          {ticket.createdBy
+            ?.fullName ??
+            "Unknown"}
         </Typography>
 
         {canManageTicket ? (
@@ -575,25 +650,60 @@ function TicketDetailPage() {
               </Select>
             </FormControl>
 
-            <TextField
-              label="Assigned Technician"
-              value={
-                assignedTo
-              }
-              onChange={(
-                event
-              ) =>
-                setAssignedTo(
-                  event.target
-                    .value
-                )
-              }
-              placeholder="Example: Leslie Sosa"
+            <FormControl
               fullWidth
               sx={{
                 marginBottom: 3,
               }}
-            />
+            >
+              <InputLabel>
+                Assigned Technician
+              </InputLabel>
+
+              <Select
+                value={
+                  assignedToUserId
+                }
+                label="Assigned Technician"
+                onChange={(
+                  event
+                ) =>
+                  setAssignedToUserId(
+                    event.target
+                      .value
+                  )
+                }
+              >
+                <MenuItem
+                  value=""
+                >
+                  Unassigned
+                </MenuItem>
+
+                {technicians.map(
+                  (
+                    technician
+                  ) => (
+                    <MenuItem
+                      key={
+                        technician.id
+                      }
+                      value={String(
+                        technician.id
+                      )}
+                    >
+                      {
+                        technician.fullName
+                      }
+                      {" — "}
+                      {
+                        technician.role
+                      }
+                    </MenuItem>
+                  )
+                )}
+              </Select>
+            </FormControl>
 
             <Button
               variant="contained"
@@ -643,7 +753,8 @@ function TicketDetailPage() {
             </Typography>
 
             <Typography>
-              {ticket.assignedTo ??
+              {ticket.assignedTo
+                ?.fullName ??
                 "Unassigned"}
             </Typography>
           </>

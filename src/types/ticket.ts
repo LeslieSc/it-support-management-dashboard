@@ -1,3 +1,7 @@
+import type {
+  User,
+} from "./auth";
+
 export type TicketPriority =
   | "Low"
   | "Medium"
@@ -26,7 +30,10 @@ export interface Ticket {
   category: TicketCategory;
   priority: TicketPriority;
   status: TicketStatus;
-  assignedTo?: string | null;
+
+  createdBy: User | null;
+  assignedTo: User | null;
+
   isOverdue: boolean;
   createdAt: string;
 }

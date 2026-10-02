@@ -26,7 +26,7 @@ export interface CreateTicketData {
 
 export interface UpdateTicketData {
   status: TicketStatus;
-  assignedTo: string | null;
+  assignedToUserId: number | null;
 }
 
 export async function getTickets(): Promise<Ticket[]> {
