@@ -4,6 +4,14 @@ A full-stack IT support ticket management system designed to simulate an interna
 
 The application allows employees to report technical issues, while administrators and technicians can manage, assign, track and resolve support tickets.
 
+## Live Demo
+
+The application is deployed on Render.
+
+- **Frontend:** [IT Support Management Dashboard](https://it-support-management-dashboard.onrender.com)
+- **Backend API:** [IT Support API](https://it-support-api-znph.onrender.com)
+- **API Health Check:** [Check API Status](https://it-support-api-znph.onrender.com/api/health)
+
 ## Features
 
 - JWT-based authentication
@@ -22,6 +30,7 @@ The application allows employees to report technical issues, while administrator
 - Automated backend tests
 - Continuous Integration with GitHub Actions
 - Full Docker support
+- Production deployment with Render
 
 ## User Roles
 
@@ -90,6 +99,7 @@ Administrators have access to all ticket management functionality, including:
 - Docker Compose
 - Nginx
 - GitHub Actions
+- Render
 
 ## Screenshots
 
@@ -117,7 +127,7 @@ Administrators have access to all ticket management functionality, including:
 
 ![Create Ticket](docs/screenshots/create-ticket.png)
 
-## Architecture
+## Production Architecture
 
 ```mermaid
 flowchart LR
@@ -125,14 +135,12 @@ flowchart LR
 
     Frontend[
         React + TypeScript
-        Material UI
+        Render Static Site
     ]
-
-    Nginx[Nginx]
 
     Backend[
         Node.js + Express
-        REST API
+        Render Web Service
     ]
 
     Auth[
@@ -142,6 +150,7 @@ flowchart LR
 
     Database[
         PostgreSQL
+        Render Managed Database
     ]
 
     Automation[
@@ -150,9 +159,7 @@ flowchart LR
     ]
 
     User --> Frontend
-    Frontend --> Nginx
-    Nginx --> Backend
-
+    Frontend --> Backend
     Backend --> Auth
     Backend --> Database
     Automation --> Database
@@ -274,6 +281,12 @@ Protected API endpoints require:
 Authorization: Bearer <token>
 ```
 
+JWT expiration is configured through the environment variable:
+
+```env
+JWT_EXPIRES_IN=8h
+```
+
 Role-based authorization is enforced on the backend.
 
 Sensitive ticket management operations are restricted to:
@@ -282,6 +295,8 @@ Sensitive ticket management operations are restricted to:
 ADMIN
 TECHNICIAN
 ```
+
+Employees can only access tickets associated with their own account.
 
 ## Validation
 
@@ -331,13 +346,15 @@ They are executed in order:
 004_ticket_history_user.sql
 ```
 
-Docker automatically mounts this directory into:
+For the local Docker environment, the SQL directory is mounted into:
 
 ```text
 /docker-entrypoint-initdb.d
 ```
 
-When PostgreSQL creates a new database volume, the schema is initialized automatically.
+When PostgreSQL creates a new Docker volume, the schema is initialized automatically.
+
+For a managed PostgreSQL deployment, such as Render PostgreSQL, the SQL files must be executed against the database during its initial setup.
 
 ## Environment Variables
 
@@ -361,6 +378,8 @@ An example is available in:
 .env.example
 ```
 
+For production, `VITE_API_URL` points to the deployed backend API.
+
 ### Backend
 
 Create:
@@ -382,9 +401,11 @@ DB_PASSWORD=your_database_password
 
 JWT_SECRET=your_jwt_secret
 JWT_EXPIRES_IN=8h
+
+FRONTEND_URL=http://localhost:5173
 ```
 
-Never commit real credentials or JWT secrets.
+Never commit real database credentials, passwords or JWT secrets.
 
 ## Running with Docker
 
@@ -448,7 +469,7 @@ http://localhost:3000
 
 ### 3. Start the Frontend
 
-Open another terminal:
+Open another terminal from the project root:
 
 ```bash
 npm install
@@ -469,13 +490,19 @@ The API exposes a health endpoint:
 GET /api/health
 ```
 
-You can test it with:
+Local:
 
 ```bash
 curl http://localhost:3000/api/health
 ```
 
-A successful response confirms that the API and PostgreSQL connection are available.
+Production:
+
+```text
+https://it-support-api-znph.onrender.com/api/health
+```
+
+A successful response confirms that both the API and PostgreSQL connection are available.
 
 ## Testing
 
@@ -544,19 +571,65 @@ npm run build
 
 This helps prevent broken code from being merged into the main branch.
 
+## Deployment
+
+The production environment is hosted on Render.
+
+### Frontend
+
+The React application is deployed as a Render Static Site:
+
+```text
+https://it-support-management-dashboard.onrender.com
+```
+
+The frontend uses the production environment variable:
+
+```env
+VITE_API_URL=https://it-support-api-znph.onrender.com/api
+```
+
+A rewrite rule sends application routes to:
+
+```text
+/index.html
+```
+
+allowing React Router routes to work correctly when a page is refreshed.
+
+### Backend
+
+The Express API is deployed as a Render Web Service:
+
+```text
+https://it-support-api-znph.onrender.com
+```
+
+Production database credentials, JWT configuration and the allowed frontend origin are provided through Render environment variables.
+
+### Database
+
+The production database uses managed PostgreSQL on Render.
+
+The backend connects to PostgreSQL using Render's internal network rather than exposing the database connection to the frontend.
+
 ## Security
 
 The project includes several security measures:
 
 - Password hashing with bcrypt
 - JWT authentication
+- JWT expiration
 - Protected API routes
 - Role-based authorization
-- Input validation
+- Input validation with Zod
 - Environment-based secrets
+- Restricted CORS configuration
 - Restricted ticket access for employees
+- Database credentials isolated from the frontend
+- Generic authentication errors for invalid credentials
 
-Passwords and JWT secrets are not stored in the repository.
+Passwords, database credentials and JWT secrets are not stored in the repository.
 
 ## Future Improvements
 
@@ -564,12 +637,14 @@ Possible future additions include:
 
 - Email notifications
 - Ticket comments
-- Attachments
+- File attachments
 - User management interface
 - Advanced reporting
 - Service-level agreements
 - Password reset
 - Refresh tokens
+- Automated database migrations
+- Expanded integration testing
 
 ## Author
 
