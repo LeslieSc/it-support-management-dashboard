@@ -1,4 +1,5 @@
 import type {
+  NextFunction,
   Request,
   Response,
 } from "express";
@@ -9,7 +10,8 @@ import {
 
 export async function getDashboardStats(
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) {
   try {
     if (!req.user) {
@@ -70,56 +72,49 @@ export async function getDashboardStats(
         ]
       );
     } else {
-      result = await pool.query(`
-        SELECT
-          COUNT(*) FILTER (
-            WHERE status = 'Open'
-          )::int
-            AS "openTickets",
+      result =
+        await pool.query(`
+          SELECT
+            COUNT(*) FILTER (
+              WHERE status = 'Open'
+            )::int
+              AS "openTickets",
 
-          COUNT(*) FILTER (
-            WHERE status =
-              'In Progress'
-          )::int
-            AS "inProgressTickets",
+            COUNT(*) FILTER (
+              WHERE status =
+                'In Progress'
+            )::int
+              AS "inProgressTickets",
 
-          COUNT(*) FILTER (
-            WHERE status =
-              'Resolved'
-          )::int
-            AS "resolvedTickets",
+            COUNT(*) FILTER (
+              WHERE status =
+                'Resolved'
+            )::int
+              AS "resolvedTickets",
 
-          COUNT(*) FILTER (
-            WHERE priority =
-              'Critical'
-          )::int
-            AS "criticalTickets",
+            COUNT(*) FILTER (
+              WHERE priority =
+                'Critical'
+            )::int
+              AS "criticalTickets",
 
-          COUNT(*) FILTER (
-            WHERE is_overdue =
-              TRUE
-          )::int
-            AS "overdueTickets",
+            COUNT(*) FILTER (
+              WHERE is_overdue =
+                TRUE
+            )::int
+              AS "overdueTickets",
 
-          COUNT(*)::int
-            AS "totalTickets"
+            COUNT(*)::int
+              AS "totalTickets"
 
-        FROM tickets
-      `);
+          FROM tickets
+        `);
     }
 
-    res.json(
+    return res.json(
       result.rows[0]
     );
   } catch (error) {
-    console.error(
-      "Error getting dashboard stats:",
-      error
-    );
-
-    res.status(500).json({
-      message:
-        "Error getting dashboard statistics",
-    });
+    next(error);
   }
-};
+}

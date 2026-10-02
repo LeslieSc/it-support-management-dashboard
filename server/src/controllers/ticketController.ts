@@ -1,4 +1,5 @@
 import type {
+  NextFunction,
   Request,
   Response,
 } from "express";
@@ -18,27 +19,48 @@ const ticketSelect = `
     t.status,
 
     CASE
-      WHEN creator.id IS NULL THEN NULL
+      WHEN creator.id IS NULL
+      THEN NULL
+
       ELSE json_build_object(
-        'id', creator.id,
-        'fullName', creator.full_name,
-        'email', creator.email,
-        'role', creator.role
+        'id',
+        creator.id,
+
+        'fullName',
+        creator.full_name,
+
+        'email',
+        creator.email,
+
+        'role',
+        creator.role
       )
     END AS "createdBy",
 
     CASE
-      WHEN technician.id IS NULL THEN NULL
+      WHEN technician.id IS NULL
+      THEN NULL
+
       ELSE json_build_object(
-        'id', technician.id,
-        'fullName', technician.full_name,
-        'email', technician.email,
-        'role', technician.role
+        'id',
+        technician.id,
+
+        'fullName',
+        technician.full_name,
+
+        'email',
+        technician.email,
+
+        'role',
+        technician.role
       )
     END AS "assignedTo",
 
-    t.is_overdue AS "isOverdue",
-    t.created_at AS "createdAt"
+    t.is_overdue
+      AS "isOverdue",
+
+    t.created_at
+      AS "createdAt"
 
   FROM tickets t
 
@@ -53,7 +75,8 @@ const ticketSelect = `
 
 export async function getTickets(
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) {
   try {
     if (!req.user) {
@@ -69,48 +92,43 @@ export async function getTickets(
       req.user.role ===
       "EMPLOYEE"
     ) {
-      result = await pool.query(
-        `
-        ${ticketSelect}
+      result =
+        await pool.query(
+          `
+          ${ticketSelect}
 
-        WHERE
-          t.created_by_user_id = $1
+          WHERE
+            t.created_by_user_id = $1
 
-        ORDER BY
-          t.created_at DESC
-        `,
-        [
-          req.user.userId,
-        ]
-      );
+          ORDER BY
+            t.created_at DESC
+          `,
+          [
+            req.user.userId,
+          ]
+        );
     } else {
-      result = await pool.query(`
-        ${ticketSelect}
+      result =
+        await pool.query(`
+          ${ticketSelect}
 
-        ORDER BY
-          t.created_at DESC
-      `);
+          ORDER BY
+            t.created_at DESC
+        `);
     }
 
-    res.json(
+    return res.json(
       result.rows
     );
   } catch (error) {
-    console.error(
-      "Error getting tickets:",
-      error
-    );
-
-    res.status(500).json({
-      message:
-        "Error getting tickets",
-    });
+    next(error);
   }
 }
 
 export async function getTicketById(
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) {
   try {
     if (!req.user) {
@@ -120,8 +138,9 @@ export async function getTicketById(
       });
     }
 
-    const { id } =
-      req.params;
+    const {
+      id,
+    } = req.params;
 
     let result;
 
@@ -129,63 +148,65 @@ export async function getTicketById(
       req.user.role ===
       "EMPLOYEE"
     ) {
-      result = await pool.query(
-        `
-        ${ticketSelect}
+      result =
+        await pool.query(
+          `
+          ${ticketSelect}
 
-        WHERE
-          t.id = $1
-          AND
-          t.created_by_user_id = $2
-        `,
-        [
-          id,
-          req.user.userId,
-        ]
-      );
+          WHERE
+            t.id = $1
+
+            AND
+            t.created_by_user_id = $2
+          `,
+          [
+            id,
+            req.user.userId,
+          ]
+        );
     } else {
-      result = await pool.query(
-        `
-        ${ticketSelect}
+      result =
+        await pool.query(
+          `
+          ${ticketSelect}
 
-        WHERE
-          t.id = $1
-        `,
-        [id]
-      );
+          WHERE
+            t.id = $1
+          `,
+          [
+            id,
+          ]
+        );
     }
 
     if (
-      result.rows.length === 0
+      result.rows.length ===
+      0
     ) {
       return res.status(404).json({
         message:
-          "Ticket not found",
+          "Ticket not found.",
       });
     }
 
-    res.json(
+    return res.json(
       result.rows[0]
     );
   } catch (error) {
-    console.error(
-      "Error getting ticket:",
-      error
-    );
-
-    res.status(500).json({
-      message:
-        "Error getting ticket",
-    });
+    next(error);
   }
 }
 
 export async function createTicket(
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) {
   const client =
     await pool.connect();
+
+  let transactionStarted =
+    false;
 
   try {
     if (!req.user) {
@@ -203,22 +224,12 @@ export async function createTicket(
       priority,
     } = req.body;
 
-    if (
-      !title ||
-      !description ||
-      !branch ||
-      !category ||
-      !priority
-    ) {
-      return res.status(400).json({
-        message:
-          "All required fields must be provided.",
-      });
-    }
-
     await client.query(
       "BEGIN"
     );
+
+    transactionStarted =
+      true;
 
     const insertResult =
       await client.query(
@@ -262,30 +273,42 @@ export async function createTicket(
         WHERE
           t.id = $1
         `,
-        [ticketId]
+        [
+          ticketId,
+        ]
       );
 
     await client.query(
       "COMMIT"
     );
 
-    res.status(201).json(
-      result.rows[0]
-    );
+    transactionStarted =
+      false;
+
+    return res
+      .status(201)
+      .json(
+        result.rows[0]
+      );
   } catch (error) {
-    await client.query(
-      "ROLLBACK"
-    );
+    if (
+      transactionStarted
+    ) {
+      await client
+        .query(
+          "ROLLBACK"
+        )
+        .catch(
+          (rollbackError) => {
+            console.error(
+              "Rollback error:",
+              rollbackError
+            );
+          }
+        );
+    }
 
-    console.error(
-      "Error creating ticket:",
-      error
-    );
-
-    res.status(500).json({
-      message:
-        "Error creating ticket",
-    });
+    next(error);
   } finally {
     client.release();
   }
@@ -293,10 +316,14 @@ export async function createTicket(
 
 export async function updateTicket(
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) {
   const client =
     await pool.connect();
+
+  let transactionStarted =
+    false;
 
   try {
     if (!req.user) {
@@ -306,46 +333,29 @@ export async function updateTicket(
       });
     }
 
-    const { id } =
-      req.params;
+    const {
+      id,
+    } = req.params;
 
     const {
       status,
       assignedToUserId,
     } = req.body;
 
-    const validStatuses = [
-      "Open",
-      "In Progress",
-      "Resolved",
-      "Closed",
-    ];
-
-    if (
-      !validStatuses.includes(
-        status
-      )
-    ) {
-      return res.status(400).json({
-        message:
-          "Invalid ticket status.",
-      });
-    }
-
     let newTechnicianName:
       | string
       | null = null;
 
     if (
-      assignedToUserId !== null &&
-      assignedToUserId !== undefined
+      assignedToUserId !== null
     ) {
       const technicianResult =
         await client.query(
           `
           SELECT
             id,
-            full_name AS "fullName",
+            full_name
+              AS "fullName",
             role
           FROM users
           WHERE id = $1
@@ -388,6 +398,9 @@ export async function updateTicket(
       "BEGIN"
     );
 
+    transactionStarted =
+      true;
+
     const currentResult =
       await client.query(
         `
@@ -406,11 +419,14 @@ export async function updateTicket(
           ON assigned_user.id =
             t.assigned_to_user_id
 
-        WHERE t.id = $1
+        WHERE
+          t.id = $1
 
         FOR UPDATE OF t
         `,
-        [id]
+        [
+          id,
+        ]
       );
 
     if (
@@ -421,9 +437,12 @@ export async function updateTicket(
         "ROLLBACK"
       );
 
+      transactionStarted =
+        false;
+
       return res.status(404).json({
         message:
-          "Ticket not found",
+          "Ticket not found.",
       });
     }
 
@@ -435,15 +454,18 @@ export async function updateTicket(
       UPDATE tickets
       SET
         status = $1,
-        assigned_to_user_id = $2,
+
+        assigned_to_user_id =
+          $2,
+
         updated_at =
           CURRENT_TIMESTAMP
+
       WHERE id = $3
       `,
       [
         status,
-        assignedToUserId ??
-          null,
+        assignedToUserId,
         id,
       ]
     );
@@ -480,7 +502,8 @@ export async function updateTicket(
     }
 
     const previousTechnicianId =
-      currentTicket.assignedToUserId ??
+      currentTicket
+        .assignedToUserId ??
       null;
 
     const nextTechnicianId =
@@ -527,30 +550,40 @@ export async function updateTicket(
         WHERE
           t.id = $1
         `,
-        [id]
+        [
+          id,
+        ]
       );
 
     await client.query(
       "COMMIT"
     );
 
-    res.json(
+    transactionStarted =
+      false;
+
+    return res.json(
       result.rows[0]
     );
   } catch (error) {
-    await client.query(
-      "ROLLBACK"
-    );
+    if (
+      transactionStarted
+    ) {
+      await client
+        .query(
+          "ROLLBACK"
+        )
+        .catch(
+          (rollbackError) => {
+            console.error(
+              "Rollback error:",
+              rollbackError
+            );
+          }
+        );
+    }
 
-    console.error(
-      "Error updating ticket:",
-      error
-    );
-
-    res.status(500).json({
-      message:
-        "Error updating ticket",
-    });
+    next(error);
   } finally {
     client.release();
   }
@@ -558,7 +591,8 @@ export async function updateTicket(
 
 export async function getTicketHistory(
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) {
   try {
     if (!req.user) {
@@ -568,8 +602,9 @@ export async function getTicketHistory(
       });
     }
 
-    const { id } =
-      req.params;
+    const {
+      id,
+    } = req.params;
 
     if (
       req.user.role ===
@@ -582,6 +617,7 @@ export async function getTicketHistory(
           FROM tickets
           WHERE
             id = $1
+
             AND
             created_by_user_id = $2
           `,
@@ -597,7 +633,7 @@ export async function getTicketHistory(
       ) {
         return res.status(404).json({
           message:
-            "Ticket not found",
+            "Ticket not found.",
         });
       }
     }
@@ -621,7 +657,8 @@ export async function getTicketHistory(
             AS "newValue",
 
           CASE
-            WHEN changed_by.id IS NULL
+            WHEN changed_by.id
+              IS NULL
             THEN NULL
 
             ELSE json_build_object(
@@ -654,21 +691,15 @@ export async function getTicketHistory(
         ORDER BY
           h.changed_at DESC
         `,
-        [id]
+        [
+          id,
+        ]
       );
 
-    res.json(
+    return res.json(
       result.rows
     );
   } catch (error) {
-    console.error(
-      "Error getting ticket history:",
-      error
-    );
-
-    res.status(500).json({
-      message:
-        "Error getting ticket history",
-    });
+    next(error);
   }
 }

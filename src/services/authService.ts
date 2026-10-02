@@ -3,37 +3,45 @@ import type {
   User,
 } from "../types/auth";
 
-const API_URL = "http://localhost:3000/api";
+import API_URL from "../config/api";
 
-const TOKEN_KEY = "it_support_token";
-const USER_KEY = "it_support_user";
+const TOKEN_KEY =
+  "it_support_token";
+
+const USER_KEY =
+  "it_support_user";
 
 export async function login(
   email: string,
   password: string
 ): Promise<LoginResponse> {
-  const response = await fetch(
-    `${API_URL}/auth/login`,
-    {
-      method: "POST",
+  const response =
+    await fetch(
+      `${API_URL}/auth/login`,
+      {
+        method: "POST",
 
-      headers: {
-        "Content-Type": "application/json",
-      },
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
 
-      body: JSON.stringify({
-        email,
-        password,
-      }),
-    }
-  );
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      }
+    );
 
   if (!response.ok) {
-    const data = await response.json();
+    const data =
+      await response
+        .json()
+        .catch(() => null);
 
     throw new Error(
-      data.message ||
-        "Unable to log in."
+      data?.message ||
+        "Login failed."
     );
   }
 
@@ -41,36 +49,48 @@ export async function login(
 }
 
 export function saveSession(
-  session: LoginResponse
+  data: LoginResponse
 ) {
   localStorage.setItem(
     TOKEN_KEY,
-    session.token
+    data.token
   );
 
   localStorage.setItem(
     USER_KEY,
-    JSON.stringify(session.user)
+    JSON.stringify(
+      data.user
+    )
   );
 }
 
-export function getToken() {
+export function getToken():
+  | string
+  | null {
   return localStorage.getItem(
     TOKEN_KEY
   );
 }
 
-export function getStoredUser(): User | null {
-  const data =
-    localStorage.getItem(USER_KEY);
+export function getStoredUser():
+  | User
+  | null {
+  const storedUser =
+    localStorage.getItem(
+      USER_KEY
+    );
 
-  if (!data) {
+  if (!storedUser) {
     return null;
   }
 
   try {
-    return JSON.parse(data);
+    return JSON.parse(
+      storedUser
+    ) as User;
   } catch {
+    clearSession();
+
     return null;
   }
 }
