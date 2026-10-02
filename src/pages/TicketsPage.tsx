@@ -1,6 +1,11 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 import {
+  Alert,
   Box,
   Button,
   Chip,
@@ -20,16 +25,27 @@ import {
   Typography,
 } from "@mui/material";
 
-import { useNavigate } from "react-router-dom";
+import {
+  Add as AddIcon,
+} from "@mui/icons-material";
 
-import type { Ticket } from "../types/ticket";
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import type {
+  Ticket,
+  TicketPriority,
+  TicketStatus,
+} from "../types/ticket";
 
 import {
   getTickets,
 } from "../services/ticketService";
 
 function TicketsPage() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
   const [tickets, setTickets] =
     useState<Ticket[]>([]);
@@ -44,17 +60,22 @@ function TicketsPage() {
     useState("");
 
   const [statusFilter, setStatusFilter] =
-    useState("All");
+    useState("");
 
   const [
     priorityFilter,
     setPriorityFilter,
-  ] = useState("All");
+  ] = useState("");
 
   useEffect(() => {
     async function loadTickets() {
       try {
-        const data = await getTickets();
+        setLoading(true);
+
+        setError("");
+
+        const data =
+          await getTickets();
 
         setTickets(data);
       } catch (error) {
@@ -75,48 +96,80 @@ function TicketsPage() {
   }, []);
 
   const filteredTickets =
-    tickets.filter((ticket) => {
-      const searchValue =
-        search.toLowerCase();
+    useMemo(() => {
+      const normalizedSearch =
+        search
+          .trim()
+          .toLowerCase();
 
-      const matchesSearch =
-        ticket.title
-          .toLowerCase()
-          .includes(searchValue) ||
-        ticket.branch
-          .toLowerCase()
-          .includes(searchValue) ||
-        ticket.category
-          .toLowerCase()
-          .includes(searchValue) ||
-        (ticket.assignedTo ?? "")
-          .toLowerCase()
-          .includes(searchValue);
+      return tickets.filter(
+        (ticket) => {
+          const matchesSearch =
+            normalizedSearch === "" ||
+            ticket.title
+              .toLowerCase()
+              .includes(
+                normalizedSearch
+              ) ||
+            ticket.branch
+              .toLowerCase()
+              .includes(
+                normalizedSearch
+              ) ||
+            ticket.category
+              .toLowerCase()
+              .includes(
+                normalizedSearch
+              ) ||
+            (
+              ticket.assignedTo
+                ?.fullName ?? ""
+            )
+              .toLowerCase()
+              .includes(
+                normalizedSearch
+              ) ||
+            (
+              ticket.createdBy
+                ?.fullName ?? ""
+            )
+              .toLowerCase()
+              .includes(
+                normalizedSearch
+              );
 
-      const matchesStatus =
-        statusFilter === "All" ||
-        ticket.status === statusFilter;
+          const matchesStatus =
+            statusFilter === "" ||
+            ticket.status ===
+              statusFilter;
 
-      const matchesPriority =
-        priorityFilter === "All" ||
-        ticket.priority ===
-          priorityFilter;
+          const matchesPriority =
+            priorityFilter === "" ||
+            ticket.priority ===
+              priorityFilter;
 
-      return (
-        matchesSearch &&
-        matchesStatus &&
-        matchesPriority
+          return (
+            matchesSearch &&
+            matchesStatus &&
+            matchesPriority
+          );
+        }
       );
-    });
+    }, [
+      tickets,
+      search,
+      statusFilter,
+      priorityFilter,
+    ]);
 
   const getPriorityColor = (
-    priority: string
+    priority: TicketPriority
   ):
     | "default"
     | "success"
+    | "info"
     | "warning"
-    | "error"
-    | "info" => {
+    | "error" => {
     switch (priority) {
       case "Low":
         return "success";
@@ -136,12 +189,12 @@ function TicketsPage() {
   };
 
   const getStatusColor = (
-    status: string
+    status: TicketStatus
   ):
     | "default"
     | "success"
-    | "warning"
-    | "info" => {
+    | "info"
+    | "warning" => {
     switch (status) {
       case "Open":
         return "warning";
@@ -151,6 +204,9 @@ function TicketsPage() {
 
       case "Resolved":
         return "success";
+
+      case "Closed":
+        return "default";
 
       default:
         return "default";
@@ -163,7 +219,8 @@ function TicketsPage() {
         sx={{
           padding: 4,
           display: "flex",
-          justifyContent: "center",
+          justifyContent:
+            "center",
         }}
       >
         <CircularProgress />
@@ -172,14 +229,20 @@ function TicketsPage() {
   }
 
   return (
-    <Box sx={{ padding: 4 }}>
+    <Box
+      sx={{
+        padding: 4,
+      }}
+    >
       <Box
         sx={{
           display: "flex",
           justifyContent:
             "space-between",
           alignItems: "center",
-          marginBottom: 4,
+          marginBottom: 3,
+          gap: 2,
+          flexWrap: "wrap",
         }}
       >
         <Box>
@@ -195,13 +258,16 @@ function TicketsPage() {
           <Typography
             color="text.secondary"
           >
-            Manage technical support
-            incidents.
+            Manage IT support
+            requests.
           </Typography>
         </Box>
 
         <Button
           variant="contained"
+          startIcon={
+            <AddIcon />
+          }
           onClick={() =>
             navigate(
               "/tickets/create"
@@ -213,14 +279,14 @@ function TicketsPage() {
       </Box>
 
       {error && (
-        <Typography
-          color="error"
+        <Alert
+          severity="error"
           sx={{
             marginBottom: 3,
           }}
         >
           {error}
-        </Typography>
+        </Alert>
       )}
 
       <Paper
@@ -237,8 +303,8 @@ function TicketsPage() {
           }}
         >
           <TextField
-            label="Search tickets"
-            placeholder="Title, branch, category..."
+            label="Search"
+            placeholder="Title, branch, category, creator or technician"
             value={search}
             onChange={(event) =>
               setSearch(
@@ -246,7 +312,8 @@ function TicketsPage() {
               )
             }
             sx={{
-              minWidth: 300,
+              minWidth: 280,
+              flex: 1,
             }}
           />
 
@@ -260,31 +327,46 @@ function TicketsPage() {
             </InputLabel>
 
             <Select
-              value={statusFilter}
+              value={
+                statusFilter
+              }
               label="Status"
-              onChange={(event) =>
+              onChange={(
+                event
+              ) =>
                 setStatusFilter(
-                  event.target.value
+                  event.target
+                    .value
                 )
               }
             >
-              <MenuItem value="All">
+              <MenuItem
+                value=""
+              >
                 All
               </MenuItem>
 
-              <MenuItem value="Open">
+              <MenuItem
+                value="Open"
+              >
                 Open
               </MenuItem>
 
-              <MenuItem value="In Progress">
+              <MenuItem
+                value="In Progress"
+              >
                 In Progress
               </MenuItem>
 
-              <MenuItem value="Resolved">
+              <MenuItem
+                value="Resolved"
+              >
                 Resolved
               </MenuItem>
 
-              <MenuItem value="Closed">
+              <MenuItem
+                value="Closed"
+              >
                 Closed
               </MenuItem>
             </Select>
@@ -304,29 +386,42 @@ function TicketsPage() {
                 priorityFilter
               }
               label="Priority"
-              onChange={(event) =>
+              onChange={(
+                event
+              ) =>
                 setPriorityFilter(
-                  event.target.value
+                  event.target
+                    .value
                 )
               }
             >
-              <MenuItem value="All">
+              <MenuItem
+                value=""
+              >
                 All
               </MenuItem>
 
-              <MenuItem value="Low">
+              <MenuItem
+                value="Low"
+              >
                 Low
               </MenuItem>
 
-              <MenuItem value="Medium">
+              <MenuItem
+                value="Medium"
+              >
                 Medium
               </MenuItem>
 
-              <MenuItem value="High">
+              <MenuItem
+                value="High"
+              >
                 High
               </MenuItem>
 
-              <MenuItem value="Critical">
+              <MenuItem
+                value="Critical"
+              >
                 Critical
               </MenuItem>
             </Select>
@@ -341,139 +436,138 @@ function TicketsPage() {
           <TableHead>
             <TableRow>
               <TableCell>
-                <strong>ID</strong>
+                ID
               </TableCell>
 
               <TableCell>
-                <strong>
-                  Title
-                </strong>
+                Title
               </TableCell>
 
               <TableCell>
-                <strong>
-                  Branch
-                </strong>
+                Branch
               </TableCell>
 
               <TableCell>
-                <strong>
-                  Category
-                </strong>
+                Category
               </TableCell>
 
               <TableCell>
-                <strong>
-                  Priority
-                </strong>
+                Priority
               </TableCell>
 
               <TableCell>
-                <strong>
-                  Status
-                </strong>
+                Status
               </TableCell>
 
               <TableCell>
-                <strong>
-                  Overdue
-                </strong>
+                Overdue
               </TableCell>
 
               <TableCell>
-                <strong>
-                  Assigned To
-                </strong>
+                Created By
+              </TableCell>
+
+              <TableCell>
+                Assigned To
               </TableCell>
             </TableRow>
           </TableHead>
 
           <TableBody>
-            {filteredTickets.map(
-              (ticket) => (
-                <TableRow
-                  key={ticket.id}
-                  hover
-                  onClick={() =>
-                    navigate(
-                      `/tickets/${ticket.id}`
-                    )
-                  }
-                  sx={{
-                    cursor:
-                      "pointer",
-                  }}
-                >
-                  <TableCell>
-                    #{ticket.id}
-                  </TableCell>
-
-                  <TableCell>
-                    {ticket.title}
-                  </TableCell>
-
-                  <TableCell>
-                    {ticket.branch}
-                  </TableCell>
-
-                  <TableCell>
-                    {ticket.category}
-                  </TableCell>
-
-                  <TableCell>
-                    <Chip
-                      label={
-                        ticket.priority
-                      }
-                      color={getPriorityColor(
-                        ticket.priority
-                      )}
-                      size="small"
-                    />
-                  </TableCell>
-
-                  <TableCell>
-                    <Chip
-                      label={
-                        ticket.status
-                      }
-                      color={getStatusColor(
-                        ticket.status
-                      )}
-                      size="small"
-                    />
-                  </TableCell>
-
-                  <TableCell>
-                    {ticket.isOverdue ? (
-                      <Chip
-                        label="Overdue"
-                        color="error"
-                        size="small"
-                      />
-                    ) : (
-                      "-"
-                    )}
-                  </TableCell>
-
-                  <TableCell>
-                    {ticket.assignedTo ??
-                      "Unassigned"}
-                  </TableCell>
-                </TableRow>
-              )
-            )}
-
             {filteredTickets.length ===
-              0 && (
+            0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={9}
                   align="center"
                 >
                   No tickets found.
                 </TableCell>
               </TableRow>
+            ) : (
+              filteredTickets.map(
+                (ticket) => (
+                  <TableRow
+                    key={
+                      ticket.id
+                    }
+                    hover
+                    onClick={() =>
+                      navigate(
+                        `/tickets/${ticket.id}`
+                      )
+                    }
+                    sx={{
+                      cursor:
+                        "pointer",
+                    }}
+                  >
+                    <TableCell>
+                      #{ticket.id}
+                    </TableCell>
+
+                    <TableCell>
+                      {ticket.title}
+                    </TableCell>
+
+                    <TableCell>
+                      {ticket.branch}
+                    </TableCell>
+
+                    <TableCell>
+                      {ticket.category}
+                    </TableCell>
+
+                    <TableCell>
+                      <Chip
+                        label={
+                          ticket.priority
+                        }
+                        color={getPriorityColor(
+                          ticket.priority
+                        )}
+                        size="small"
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      <Chip
+                        label={
+                          ticket.status
+                        }
+                        color={getStatusColor(
+                          ticket.status
+                        )}
+                        size="small"
+                      />
+                    </TableCell>
+
+                    <TableCell>
+                      {ticket.isOverdue ? (
+                        <Chip
+                          label="Overdue"
+                          color="error"
+                          size="small"
+                        />
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
+
+                    <TableCell>
+                      {ticket.createdBy
+                        ?.fullName ??
+                        "Unknown"}
+                    </TableCell>
+
+                    <TableCell>
+                      {ticket.assignedTo
+                        ?.fullName ??
+                        "Unassigned"}
+                    </TableCell>
+                  </TableRow>
+                )
+              )
             )}
           </TableBody>
         </Table>

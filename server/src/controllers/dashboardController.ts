@@ -8,36 +8,105 @@ import {
 } from "../config/database.js";
 
 export async function getDashboardStats(
-  _req: Request,
+  req: Request,
   res: Response
 ) {
   try {
-    const result = await pool.query(`
-      SELECT
-        COUNT(*) FILTER (
-          WHERE status = 'Open'
-        )::int AS "openTickets",
+    if (!req.user) {
+      return res.status(401).json({
+        message:
+          "Authentication required.",
+      });
+    }
 
-        COUNT(*) FILTER (
-          WHERE status = 'In Progress'
-        )::int AS "inProgressTickets",
+    let result;
 
-        COUNT(*) FILTER (
-          WHERE status = 'Resolved'
-        )::int AS "resolvedTickets",
+    if (
+      req.user.role ===
+      "EMPLOYEE"
+    ) {
+      result = await pool.query(
+        `
+        SELECT
+          COUNT(*) FILTER (
+            WHERE status = 'Open'
+          )::int
+            AS "openTickets",
 
-        COUNT(*) FILTER (
-          WHERE priority = 'Critical'
-        )::int AS "criticalTickets",
+          COUNT(*) FILTER (
+            WHERE status =
+              'In Progress'
+          )::int
+            AS "inProgressTickets",
 
-        COUNT(*) FILTER (
-          WHERE is_overdue = TRUE
-        )::int AS "overdueTickets",
+          COUNT(*) FILTER (
+            WHERE status =
+              'Resolved'
+          )::int
+            AS "resolvedTickets",
 
-        COUNT(*)::int AS "totalTickets"
+          COUNT(*) FILTER (
+            WHERE priority =
+              'Critical'
+          )::int
+            AS "criticalTickets",
 
-      FROM tickets
-    `);
+          COUNT(*) FILTER (
+            WHERE is_overdue =
+              TRUE
+          )::int
+            AS "overdueTickets",
+
+          COUNT(*)::int
+            AS "totalTickets"
+
+        FROM tickets
+
+        WHERE
+          created_by_user_id = $1
+        `,
+        [
+          req.user.userId,
+        ]
+      );
+    } else {
+      result = await pool.query(`
+        SELECT
+          COUNT(*) FILTER (
+            WHERE status = 'Open'
+          )::int
+            AS "openTickets",
+
+          COUNT(*) FILTER (
+            WHERE status =
+              'In Progress'
+          )::int
+            AS "inProgressTickets",
+
+          COUNT(*) FILTER (
+            WHERE status =
+              'Resolved'
+          )::int
+            AS "resolvedTickets",
+
+          COUNT(*) FILTER (
+            WHERE priority =
+              'Critical'
+          )::int
+            AS "criticalTickets",
+
+          COUNT(*) FILTER (
+            WHERE is_overdue =
+              TRUE
+          )::int
+            AS "overdueTickets",
+
+          COUNT(*)::int
+            AS "totalTickets"
+
+        FROM tickets
+      `);
+    }
 
     res.json(
       result.rows[0]
@@ -53,4 +122,4 @@ export async function getDashboardStats(
         "Error getting dashboard statistics",
     });
   }
-}
+};
