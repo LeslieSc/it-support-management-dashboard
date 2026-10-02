@@ -5,7 +5,9 @@ import type {
 } from "express";
 
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import jwt, {
+  type SignOptions,
+} from "jsonwebtoken";
 
 import {
   pool,
@@ -30,6 +32,12 @@ function createToken(
     );
   }
 
+  const expiresIn =
+    (
+      process.env.JWT_EXPIRES_IN ||
+      "8h"
+    ) as SignOptions["expiresIn"];
+
   return jwt.sign(
     {
       userId,
@@ -38,7 +46,7 @@ function createToken(
     },
     secret,
     {
-      expiresIn: "8h",
+      expiresIn,
     }
   );
 }

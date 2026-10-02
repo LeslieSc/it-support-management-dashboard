@@ -17,8 +17,41 @@ import {
 
 const app = express();
 
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "http://localhost:5173",
+  "http://localhost:8080",
+].filter(
+  (origin): origin is string =>
+    Boolean(origin)
+);
+
 app.use(
-  cors()
+  cors({
+    origin: (
+      origin,
+      callback
+    ) => {
+      if (
+        !origin ||
+        allowedOrigins.includes(
+          origin
+        )
+      ) {
+        callback(
+          null,
+          true
+        );
+        return;
+      }
+
+      callback(
+        new Error(
+          "Origin not allowed by CORS."
+        )
+      );
+    },
+  })
 );
 
 app.use(
