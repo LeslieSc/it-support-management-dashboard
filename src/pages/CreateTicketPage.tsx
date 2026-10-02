@@ -1,10 +1,11 @@
-import { useState } from "react";
+import {
+  useState,
+} from "react";
 
 import {
   Alert,
   Box,
   Button,
-  CircularProgress,
   FormControl,
   InputLabel,
   MenuItem,
@@ -14,39 +15,83 @@ import {
   Typography,
 } from "@mui/material";
 
-import { useNavigate } from "react-router-dom";
+import {
+  ArrowBack as ArrowBackIcon,
+  Send as SendIcon,
+} from "@mui/icons-material";
+
+import {
+  useNavigate,
+} from "react-router-dom";
 
 import type {
   TicketCategory,
   TicketPriority,
 } from "../types/ticket";
 
-import { createTicket } from "../services/ticketService";
+import {
+  createTicket,
+} from "../services/ticketService";
 
 function CreateTicketPage() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [branch, setBranch] = useState("");
+  const [
+    title,
+    setTitle,
+  ] = useState("");
 
-  const [category, setCategory] =
-    useState<TicketCategory | "">("");
+  const [
+    description,
+    setDescription,
+  ] = useState("");
 
-  const [priority, setPriority] =
-    useState<TicketPriority | "">("");
+  const [
+    branch,
+    setBranch,
+  ] = useState("");
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [
+    category,
+    setCategory,
+  ] =
+    useState<
+      TicketCategory | ""
+    >("");
+
+  const [
+    priority,
+    setPriority,
+  ] =
+    useState<
+      TicketPriority | ""
+    >("");
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
 
   const handleSubmit = async (
     event: React.FormEvent
   ) => {
     event.preventDefault();
 
-    if (!category || !priority) {
+    if (
+      !title ||
+      !description ||
+      !branch ||
+      !category ||
+      !priority
+    ) {
       setError(
-        "Please select a category and priority."
+        "Please complete all fields."
       );
 
       return;
@@ -64,7 +109,9 @@ function CreateTicketPage() {
         priority,
       });
 
-      navigate("/tickets");
+      navigate(
+        "/tickets"
+      );
     } catch (error) {
       console.error(
         "Error creating ticket:",
@@ -72,7 +119,7 @@ function CreateTicketPage() {
       );
 
       setError(
-        "Could not create the ticket. Please try again."
+        "Could not create ticket."
       );
     } finally {
       setLoading(false);
@@ -80,81 +127,138 @@ function CreateTicketPage() {
   };
 
   return (
-    <Box sx={{ padding: 4 }}>
-      <Typography
-        variant="h4"
-        sx={{ fontWeight: "bold" }}
-      >
-        Create Ticket
-      </Typography>
-
-      <Typography
-        color="text.secondary"
-        sx={{ marginBottom: 4 }}
-      >
-        Report a new technical incident.
-      </Typography>
-
-      <Paper
+    <Box
+      sx={{
+        padding: {
+          xs: 2,
+          md: 4,
+        },
+      }}
+    >
+      <Button
+        startIcon={
+          <ArrowBackIcon />
+        }
+        onClick={() =>
+          navigate(
+            "/tickets"
+          )
+        }
         sx={{
-          padding: 4,
-          maxWidth: 800,
+          marginBottom: 3,
+          textTransform:
+            "none",
         }}
       >
-        {error && (
-          <Alert
-            severity="error"
-            sx={{ marginBottom: 3 }}
-          >
-            {error}
-          </Alert>
-        )}
+        Back to Tickets
+      </Button>
 
-        <Box
-          component="form"
-          onSubmit={handleSubmit}
+      <Typography
+        variant="h4"
+        sx={{
+          fontWeight: 700,
+          marginBottom: 4,
+        }}
+      >
+        New Ticket
+      </Typography>
+
+      {error && (
+        <Alert
+          severity="error"
           sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 3,
+            marginBottom: 3,
+            maxWidth: 760,
           }}
         >
-          <TextField
-            label="Title"
-            value={title}
-            onChange={(event) =>
-              setTitle(event.target.value)
-            }
-            required
-            fullWidth
-          />
+          {error}
+        </Alert>
+      )}
 
-          <TextField
-            label="Description"
-            value={description}
-            onChange={(event) =>
-              setDescription(
-                event.target.value
-              )
-            }
-            required
-            multiline
-            rows={4}
-            fullWidth
-          />
+      <Paper
+        component="form"
+        onSubmit={
+          handleSubmit
+        }
+        sx={{
+          padding: {
+            xs: 2,
+            md: 4,
+          },
+          borderRadius: 3,
+          maxWidth: 760,
+        }}
+      >
+        <TextField
+          label="Title"
+          value={title}
+          onChange={(
+            event
+          ) =>
+            setTitle(
+              event.target.value
+            )
+          }
+          fullWidth
+          required
+          sx={{
+            marginBottom: 3,
+          }}
+        />
 
-          <TextField
-            label="Branch"
-            value={branch}
-            onChange={(event) =>
-              setBranch(event.target.value)
-            }
-            placeholder="Example: Chihuahua 001"
-            required
-            fullWidth
-          />
+        <TextField
+          label="Description"
+          value={
+            description
+          }
+          onChange={(
+            event
+          ) =>
+            setDescription(
+              event.target.value
+            )
+          }
+          multiline
+          minRows={5}
+          fullWidth
+          required
+          sx={{
+            marginBottom: 3,
+          }}
+        />
 
-          <FormControl fullWidth required>
+        <TextField
+          label="Branch"
+          value={branch}
+          onChange={(
+            event
+          ) =>
+            setBranch(
+              event.target.value
+            )
+          }
+          fullWidth
+          required
+          sx={{
+            marginBottom: 3,
+          }}
+        />
+
+        <Box
+          sx={{
+            display: "flex",
+            gap: 2,
+            flexDirection: {
+              xs: "column",
+              sm: "row",
+            },
+            marginBottom: 4,
+          }}
+        >
+          <FormControl
+            fullWidth
+            required
+          >
             <InputLabel>
               Category
             </InputLabel>
@@ -162,40 +266,57 @@ function CreateTicketPage() {
             <Select
               value={category}
               label="Category"
-              onChange={(event) =>
+              onChange={(
+                event
+              ) =>
                 setCategory(
                   event.target
                     .value as TicketCategory
                 )
               }
             >
-              <MenuItem value="Network">
+              <MenuItem
+                value="Network"
+              >
                 Network
               </MenuItem>
 
-              <MenuItem value="Hardware">
+              <MenuItem
+                value="Hardware"
+              >
                 Hardware
               </MenuItem>
 
-              <MenuItem value="Software">
+              <MenuItem
+                value="Software"
+              >
                 Software
               </MenuItem>
 
-              <MenuItem value="POS">
+              <MenuItem
+                value="POS"
+              >
                 POS
               </MenuItem>
 
-              <MenuItem value="Access">
+              <MenuItem
+                value="Access"
+              >
                 Access
               </MenuItem>
 
-              <MenuItem value="Other">
+              <MenuItem
+                value="Other"
+              >
                 Other
               </MenuItem>
             </Select>
           </FormControl>
 
-          <FormControl fullWidth required>
+          <FormControl
+            fullWidth
+            required
+          >
             <InputLabel>
               Priority
             </InputLabel>
@@ -203,62 +324,93 @@ function CreateTicketPage() {
             <Select
               value={priority}
               label="Priority"
-              onChange={(event) =>
+              onChange={(
+                event
+              ) =>
                 setPriority(
                   event.target
                     .value as TicketPriority
                 )
               }
             >
-              <MenuItem value="Low">
+              <MenuItem
+                value="Low"
+              >
                 Low
               </MenuItem>
 
-              <MenuItem value="Medium">
+              <MenuItem
+                value="Medium"
+              >
                 Medium
               </MenuItem>
 
-              <MenuItem value="High">
+              <MenuItem
+                value="High"
+              >
                 High
               </MenuItem>
 
-              <MenuItem value="Critical">
+              <MenuItem
+                value="Critical"
+              >
                 Critical
               </MenuItem>
             </Select>
           </FormControl>
+        </Box>
 
-          <Box
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent:
+              "flex-end",
+            gap: 2,
+            flexWrap: "wrap",
+          }}
+        >
+          <Button
+            variant="outlined"
+            onClick={() =>
+              navigate(
+                "/tickets"
+              )
+            }
+            disabled={
+              loading
+            }
             sx={{
-              display: "flex",
-              gap: 2,
+              textTransform:
+                "none",
+              borderRadius: 2,
             }}
           >
-            <Button
-              variant="contained"
-              type="submit"
-              disabled={loading}
-            >
-              {loading ? (
-                <CircularProgress
-                  size={24}
-                  color="inherit"
-                />
-              ) : (
-                "Create Ticket"
-              )}
-            </Button>
+            Cancel
+          </Button>
 
-            <Button
-              variant="outlined"
-              disabled={loading}
-              onClick={() =>
-                navigate("/tickets")
-              }
-            >
-              Cancel
-            </Button>
-          </Box>
+          <Button
+            type="submit"
+            variant="contained"
+            startIcon={
+              loading
+                ? undefined
+                : (
+                  <SendIcon />
+                )
+            }
+            disabled={
+              loading
+            }
+            sx={{
+              textTransform:
+                "none",
+              borderRadius: 2,
+            }}
+          >
+            {loading
+              ? "Creating..."
+              : "Create Ticket"}
+          </Button>
         </Box>
       </Paper>
     </Box>
