@@ -458,13 +458,15 @@ export async function updateTicket(
           ticket_id,
           field_name,
           old_value,
-          new_value
+          new_value,
+          changed_by_user_id
         )
         VALUES (
           $1,
           $2,
           $3,
-          $4
+          $4,
+          $5
         )
         `,
         [
@@ -472,6 +474,7 @@ export async function updateTicket(
           "status",
           currentTicket.status,
           status,
+          req.user.userId,
         ]
       );
     }
@@ -494,13 +497,15 @@ export async function updateTicket(
           ticket_id,
           field_name,
           old_value,
-          new_value
+          new_value,
+          changed_by_user_id
         )
         VALUES (
           $1,
           $2,
           $3,
-          $4
+          $4,
+          $5
         )
         `,
         [
@@ -509,6 +514,7 @@ export async function updateTicket(
           currentTicket
             .assignedToName,
           newTechnicianName,
+          req.user.userId,
         ]
       );
     }
@@ -600,25 +606,53 @@ export async function getTicketHistory(
       await pool.query(
         `
         SELECT
-          id,
-          ticket_id
+          h.id,
+
+          h.ticket_id
             AS "ticketId",
-          field_name
+
+          h.field_name
             AS "fieldName",
-          old_value
+
+          h.old_value
             AS "oldValue",
-          new_value
+
+          h.new_value
             AS "newValue",
-          changed_at
+
+          CASE
+            WHEN changed_by.id IS NULL
+            THEN NULL
+
+            ELSE json_build_object(
+              'id',
+              changed_by.id,
+
+              'fullName',
+              changed_by.full_name,
+
+              'email',
+              changed_by.email,
+
+              'role',
+              changed_by.role
+            )
+          END AS "changedBy",
+
+          h.changed_at
             AS "changedAt"
 
-        FROM ticket_history
+        FROM ticket_history h
+
+        LEFT JOIN users changed_by
+          ON changed_by.id =
+            h.changed_by_user_id
 
         WHERE
-          ticket_id = $1
+          h.ticket_id = $1
 
         ORDER BY
-          changed_at DESC
+          h.changed_at DESC
         `,
         [id]
       );

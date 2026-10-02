@@ -860,6 +860,35 @@ function TicketDetailPage() {
 
                   <Typography
                     variant="body2"
+                    sx={{
+                      marginTop: 1,
+                    }}
+                  >
+                    Changed by{" "}
+                    <strong>
+                      {historyItem
+                        .changedBy
+                        ?.fullName ??
+                        "Unknown user"}
+                    </strong>
+                  </Typography>
+
+                  {historyItem
+                    .changedBy && (
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                    >
+                      {
+                        historyItem
+                          .changedBy
+                          .role
+                      }
+                    </Typography>
+                  )}
+
+                  <Typography
+                    variant="body2"
                     color="text.secondary"
                     sx={{
                       marginTop: 1,
